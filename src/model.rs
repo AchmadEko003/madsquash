@@ -100,42 +100,61 @@ pub fn parse_appimage_name(file_name: &str) -> (String, String) {
 
     let mut name_parts: Vec<String> = Vec::new();
     let mut version: Option<String> = None;
+    let mut embedded_num_ver: Option<String> = None;
 
     for token in raw_tokens {
         let lower = token.to_ascii_lowercase();
         if matches!(
             lower.as_str(),
-            "x86" | "64" | "x86_64" | "aarch64" | "arm64" | "i686" | "amd64" | "linux"
+            "x86" | "64" | "x64" | "x86_64" | "aarch64" | "arm64" | "armhf" | "ia32" | "i686" | "amd64" | "linux" | "appimage"
         ) {
             continue;
         }
 
         let clean_ver = token.strip_prefix('v').or_else(|| token.strip_prefix('V')).unwrap_or(token);
-        let looks_like_version = clean_ver
-            .chars()
-            .next()
-            .map(|c| c.is_ascii_digit())
-            .unwrap_or(false)
-            && clean_ver.contains('.');
+        let starts_with_digit = clean_ver.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false);
+        let has_dot = clean_ver.contains('.');
+        let is_pure_digits = starts_with_digit && clean_ver.chars().all(|c| c.is_ascii_digit());
+        let looks_like_version = starts_with_digit && (has_dot || is_pure_digits);
 
         if version.is_none() && looks_like_version {
             version = Some(clean_ver.to_string());
+        } else if let Some(digit_pos) = token.find(|c: char| c.is_ascii_digit()) {
+            if digit_pos > 0 && token[digit_pos..].chars().all(|c| c.is_ascii_digit()) {
+                name_parts.push(token[..digit_pos].to_string());
+                if embedded_num_ver.is_none() {
+                    embedded_num_ver = Some(token[digit_pos..].to_string());
+                }
+            } else {
+                name_parts.push(token.replace('.', " "));
+            }
         } else {
             name_parts.push(token.replace('.', " "));
         }
     }
 
-    let mut name = name_parts.join(" ").trim().to_string();
-    if name.is_empty() {
-        name = "AppImage".to_string();
-    } else if let Some(first) = name.chars().next() {
-        if first.is_lowercase() {
-            let mut chars = name.chars();
-            if let Some(f) = chars.next() {
-                name = f.to_uppercase().collect::<String>() + chars.as_str();
-            }
-        }
+    if version.is_none() && embedded_num_ver.is_some() {
+        version = embedded_num_ver;
     }
+
+    let name = name_parts
+        .iter()
+        .flat_map(|s| s.split_whitespace())
+        .map(|word| {
+            let mut chars = word.chars();
+            match chars.next() {
+                Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+                None => String::new(),
+            }
+        })
+        .collect::<Vec<String>>()
+        .join(" ");
+
+    let name = if name.is_empty() {
+        "AppImage".to_string()
+    } else {
+        name
+    };
 
     (name, version.unwrap_or_else(|| "—".to_string()))
 }
@@ -255,6 +274,16 @@ pub fn inspect_appimage_metadata(path: &Path, file_name: &str) -> AppImageDetail
                                             if !val.trim().is_empty() {
                                                 details.version = val.trim().to_string();
                                             }
+                                        } else if let Some(val) = line.strip_prefix("X-Version=") {
+                                            if !val.trim().is_empty() {
+                                                details.version = val.trim().to_string();
+                                            }
+                                        } else if let Some(val) = line.strip_prefix("Version=") {
+                                            let v = val.trim();
+                                            // Desktop Entry Spec versions are typically 1.0, 1.1, 1.2, 1.3, 1.4, 1.5
+                                            if !v.is_empty() && !matches!(v, "1.0" | "1.1" | "1.2" | "1.3" | "1.4" | "1.5") {
+                                                details.version = v.to_string();
+                                            }
                                         } else if let Some(val) = line.strip_prefix("Categories=") {
                                             details.categories = Some(val.trim().to_string());
                                         } else if let Some(val) = line.strip_prefix("Exec=") {
@@ -309,6 +338,16 @@ pub fn inspect_appimage_metadata(path: &Path, file_name: &str) -> AppImageDetail
                         details.icon_path = Some(target_path);
                     }
                 }
+            }
+        }
+    }
+
+    // 4. Fallback: if version is still "—", check if app name ends with a version / release number (e.g. "Navicat Premium Lite 18")
+    if details.version == "—" {
+        if let Some(last_token) = details.name.split_whitespace().last() {
+            let clean = last_token.strip_prefix('v').or_else(|| last_token.strip_prefix('V')).unwrap_or(last_token);
+            if clean.chars().all(|c| c.is_ascii_digit() || c == '.') && clean.chars().any(|c| c.is_ascii_digit()) {
+                details.version = clean.to_string();
             }
         }
     }
@@ -444,6 +483,37 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_parse_appimage_name_variants() {
+        let (name, ver) = parse_appimage_name("navicat18-premium-lite-id-x86_64.AppImage");
+        assert_eq!(name, "Navicat Premium Lite Id");
+        assert_eq!(ver, "18");
+
+        let (name, ver) = parse_appimage_name("Grok_Bot_0.75.0.AppImage");
+        assert_eq!(name, "Grok Bot");
+        assert_eq!(ver, "0.75.0");
+
+        let (name, ver) = parse_appimage_name("Kdenlive-25.04.0-x86_64.AppImage");
+        assert_eq!(name, "Kdenlive");
+        assert_eq!(ver, "25.04.0");
+
+        let (name, ver) = parse_appimage_name("krita-5.2.9-x86_64.AppImage");
+        assert_eq!(name, "Krita");
+        assert_eq!(ver, "5.2.9");
+
+        let (name, ver) = parse_appimage_name("cursor-0.42.3-x86_64.AppImage");
+        assert_eq!(name, "Cursor");
+        assert_eq!(ver, "0.42.3");
+
+        let (name, ver) = parse_appimage_name("Postman-v10.15.0-linux-x64.AppImage");
+        assert_eq!(name, "Postman");
+        assert_eq!(ver, "10.15.0");
+
+        let (name, ver) = parse_appimage_name("balenaEtcher-1.18.11-ia32.AppImage");
+        assert_eq!(name, "BalenaEtcher");
+        assert_eq!(ver, "1.18.11");
+    }
+
+    #[test]
     fn test_inspect_navicat_if_present() {
         let path = PathBuf::from("/home/madko/Downloads/navicat18-premium-lite-id-x86_64.AppImage");
         if !path.exists() {
@@ -452,6 +522,7 @@ mod tests {
 
         let details = inspect_appimage_metadata(&path, "navicat18-premium-lite-id-x86_64.AppImage");
         assert_eq!(details.name, "Navicat Premium Lite 18");
+        assert_eq!(details.version, "18");
         assert_eq!(details.arch, "x86_64");
         assert_eq!(details.app_type, "AppImage 2");
         assert!(details.icon_path.is_some());
