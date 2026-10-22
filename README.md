@@ -1,4 +1,4 @@
-# Madsquash ✦
+# Madsquash
 
 <p align="center">
   <img src="assets/madsquash.svg" alt="Madsquash Logo" width="96" height="96" />
@@ -22,13 +22,13 @@
 
 ---
 
-## ✦ Tentang Madsquash
+## Tentang Madsquash
 
 **Madsquash** adalah aplikasi pengelola AppImage modern yang dibangun sepenuhnya menggunakan bahasa pemrograman **Rust** dan framework UI GPU-accelerated (**GPUI**). Madsquash dirancang untuk memberikan pengalaman pengguna terbaik dalam mengelola, mengekstrak, mengintegrasikan, dan menjalankan berkas `.AppImage` di desktop Linux tanpa ketergantungan runtime yang berat.
 
 ---
 
-## ✦ Fitur Utama
+## Fitur Utama
 
 - ⚡ **Ekstraksi SquashFS Instan**: Menggunakan pustaka pure-Rust `backhand` untuk membedah partisi SquashFS dan mengekstrak ikon serta metadata `.desktop` dalam hitungan milidetik tanpa mengeksekusi berkas binary secara langsung.
 - 🎨 **Antarmuka Modern & Nyaman**: Mengusung palet warna *soft pastel cerulean* dan *charcoal slate* yang ramah di mata, bersih dari elemen visual yang tidak perlu, dan nyaman untuk penggunaan jangka panjang.
@@ -45,7 +45,7 @@
 
 ---
 
-## ✦ Unduh & Instalasi
+## Unduh & Instalasi
 
 Kunjungi halaman [**GitHub Releases**](https://github.com/AchmadEko003/madsquash/releases/latest) untuk mengunduh paket siap pakai sesuai distro Anda:
 
@@ -77,7 +77,7 @@ chmod +x Madsquash-*-x86_64.AppImage
 
 ---
 
-## ✦ Membangun dari Sumber (Build from Source)
+## Membangun dari Sumber (Build from Source)
 
 ### Kebutuhan Sistem (Prerequisites)
 Pastikan Anda telah memasang Rust toolchain dan pustaka pengembangan sistem:
@@ -114,7 +114,7 @@ Binary release yang dihasilkan berada di `target/release/madsquash` dengan ukura
 
 ---
 
-## ✦ Membuat Paket Rilis (.deb, .rpm, .pkg.tar.zst, .AppImage)
+## Membuat Paket Rilis (.deb, .rpm, .pkg.tar.zst, .AppImage)
 
 Madsquash menyertakan skrip otomatisasi packaging lokal:
 
@@ -133,7 +133,7 @@ Seluruh berkas installer akan tersedia di folder `dist/`:
 
 ---
 
-## ✦ Struktur Direktori Data Madsquash
+## Struktur Direktori Data Madsquash
 
 Ketika Anda memasang berkas AppImage menggunakan Madsquash, file akan ditata rapi pada direktori standar XDG Linux:
 
