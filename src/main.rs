@@ -18,9 +18,10 @@ use crate::component::{
     toast::render_toast,
 };
 use crate::model::{
-    AppItem, DialogKind, PendingInstall, app_storage_dir, compute_file_hash,
-    inspect_appimage_metadata, install_app_files, launch_app, load_installed_apps,
-    save_installed_apps, slug, uninstall_app_files,
+    AppItem, DialogKind, PendingInstall, app_installed_binary_path, app_storage_dir,
+    compute_file_hash, inspect_appimage_metadata, install_app_files, launch_app,
+    load_installed_apps, register_madsquash_desktop_entry, save_installed_apps, slug,
+    uninstall_app_files,
 };
 
 pub struct MadsquashApp {
@@ -36,7 +37,11 @@ pub struct MadsquashApp {
 }
 
 impl MadsquashApp {
-    pub fn new(search_input: Entity<InputState>, cx: &mut Context<Self>) -> Self {
+    pub fn new(
+        search_input: Entity<InputState>,
+        cli_file: Option<PathBuf>,
+        cx: &mut Context<Self>,
+    ) -> Self {
         let apps = load_installed_apps();
         let selected_id = apps.first().map(|a| a.id.clone());
 
@@ -51,7 +56,7 @@ impl MadsquashApp {
         )
         .detach();
 
-        Self {
+        let mut app = Self {
             apps,
             selected_id,
             query: String::new(),
@@ -61,7 +66,28 @@ impl MadsquashApp {
             drop_error: None,
             toast: None,
             _toast_task: None,
+        };
+
+        if let Some(path) = cli_file {
+            let canon = path.canonicalize().unwrap_or_else(|_| path.clone());
+            let matching_id = app
+                .apps
+                .iter()
+                .find(|a| {
+                    let bin = app_installed_binary_path(&a.id);
+                    bin == path || bin.canonicalize().map(|b| b == canon).unwrap_or(false)
+                })
+                .map(|a| a.id.clone());
+
+            if let Some(id) = matching_id {
+                app.selected_id = Some(id.clone());
+                app.launch_app(&id, cx);
+            } else {
+                app.take_file_path(path, cx);
+            }
         }
+
+        app
     }
 
     pub fn visible_apps(&self) -> Vec<&AppItem> {
@@ -372,10 +398,30 @@ impl Render for MadsquashApp {
     }
 }
 
+fn parse_cli_appimage_arg() -> Option<PathBuf> {
+    for arg in std::env::args().skip(1) {
+        if arg.starts_with('-') {
+            continue;
+        }
+        let clean = arg.trim_start_matches("file://");
+        let path = PathBuf::from(clean);
+        if path.exists() && path.is_file() {
+            let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+            if name.len() > 9 && name[name.len() - 9..].eq_ignore_ascii_case(".appimage") {
+                return Some(path);
+            }
+        }
+    }
+    None
+}
+
 fn main() {
+    register_madsquash_desktop_entry();
+    let cli_file = parse_cli_appimage_arg();
+
     gpui_kit::application()
         .with_assets(gpui_kit::assets::Assets)
-        .run(|cx| {
+        .run(move |cx| {
             gpui_kit::init(cx);
             Theme::change(ThemeMode::Dark, None, cx);
             Theme::update(cx, |theme| {
@@ -385,11 +431,11 @@ fn main() {
                 theme.muted_foreground = rgb(0xa3988c).into();
                 theme.border = rgb(0x3a342c).into();
                 theme.input = rgb(0x3a342c).into();
-                theme.primary = rgb(0x0fc5fc).into();
-                theme.primary_foreground = rgb(0x07151a).into();
-                theme.accent = rgb(0x0fc5fc).into();
-                theme.accent_foreground = rgb(0x07151a).into();
-                theme.ring = rgb(0x0fc5fc).into();
+                theme.primary = rgb(0x5bbfe6).into();
+                theme.primary_foreground = rgb(0x0c141d).into();
+                theme.accent = rgb(0x5bbfe6).into();
+                theme.accent_foreground = rgb(0x0c141d).into();
+                theme.ring = rgb(0x5bbfe6).into();
             });
 
             let window_bounds = WindowBounds::Windowed(Bounds::centered(
@@ -407,10 +453,11 @@ fn main() {
                 ..Default::default()
             };
 
-            gpui_kit::open_window(window_options, cx, |window, cx| {
+            let cli_file_for_win = cli_file.clone();
+            gpui_kit::open_window(window_options, cx, move |window, cx| {
                 let search_input =
                     cx.new(|cx| InputState::new(window, cx).placeholder("Cari slot"));
-                cx.new(|cx| MadsquashApp::new(search_input, cx))
+                cx.new(|cx| MadsquashApp::new(search_input, cli_file_for_win.clone(), cx))
             })
             .expect("failed to open window");
         });

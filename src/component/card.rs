@@ -46,8 +46,11 @@ pub fn render_app_card(
         .flex()
         .flex_col()
         .justify_between()
-        .on_click(cx.listener(move |this, _, _, cx| {
+        .on_click(cx.listener(move |this, event: &ClickEvent, _, cx| {
             this.select_app(app_id.clone(), cx);
+            if event.click_count() >= 2 {
+                this.launch_app(&app_id, cx);
+            }
         }))
         // Top row: Icon on left, version pill on right
         .child(

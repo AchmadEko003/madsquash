@@ -81,6 +81,30 @@ pub fn app_desktop_entry_path(id: &str) -> PathBuf {
     applications_dir().join(format!("madsquash-{}.desktop", id))
 }
 
+pub fn register_madsquash_desktop_entry() {
+    if let Ok(exe) = std::env::current_exe() {
+        let apps_dir = applications_dir();
+        let _ = fs::create_dir_all(&apps_dir);
+        let desktop_file = apps_dir.join("madsquash.desktop");
+        let content = format!(
+            "[Desktop Entry]\n\
+             Type=Application\n\
+             Name=Madsquash\n\
+             Comment=Modern Pure-Rust AppImage Manager\n\
+             Exec=\"{}\" %F\n\
+             Terminal=false\n\
+             Categories=Utility;PackageManager;\n\
+             MimeType=application/vnd.appimage;application/x-iso9660-appimage;\n\
+             StartupNotify=true\n",
+            exe.display()
+        );
+        let _ = fs::write(&desktop_file, content);
+        let _ = std::process::Command::new("update-desktop-database")
+            .arg(&apps_dir)
+            .status();
+    }
+}
+
 pub fn apps_db_path() -> PathBuf {
     madsquash_data_dir().join("apps.json")
 }
