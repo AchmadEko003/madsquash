@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 
 use backhand::{FilesystemReader, InnerNode};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct AppItem {
     pub id: String,
     pub name: String,
@@ -45,12 +45,160 @@ pub struct PendingInstall {
     pub exec: Option<String>,
 }
 
-pub fn madsquash_icon_dir() -> PathBuf {
+pub fn madsquash_data_dir() -> PathBuf {
     if let Ok(home) = std::env::var("HOME") {
-        PathBuf::from(home).join(".local/share/madsquash/icons")
+        PathBuf::from(home).join(".local/share/madsquash")
     } else {
-        PathBuf::from("/tmp/madsquash/icons")
+        PathBuf::from("/tmp/madsquash")
     }
+}
+
+pub fn madsquash_apps_dir() -> PathBuf {
+    madsquash_data_dir().join("apps")
+}
+
+pub fn madsquash_icon_dir() -> PathBuf {
+    madsquash_data_dir().join("icons")
+}
+
+pub fn applications_dir() -> PathBuf {
+    if let Ok(home) = std::env::var("HOME") {
+        PathBuf::from(home).join(".local/share/applications")
+    } else {
+        PathBuf::from("/tmp/applications")
+    }
+}
+
+pub fn app_storage_dir(id: &str) -> PathBuf {
+    madsquash_apps_dir().join(id)
+}
+
+pub fn app_installed_binary_path(id: &str) -> PathBuf {
+    app_storage_dir(id).join("app.AppImage")
+}
+
+pub fn app_desktop_entry_path(id: &str) -> PathBuf {
+    applications_dir().join(format!("madsquash-{}.desktop", id))
+}
+
+pub fn apps_db_path() -> PathBuf {
+    madsquash_data_dir().join("apps.json")
+}
+
+pub fn save_installed_apps(apps: &[AppItem]) {
+    let _ = fs::create_dir_all(madsquash_data_dir());
+    if let Ok(json) = serde_json::to_string_pretty(apps) {
+        let _ = fs::write(apps_db_path(), json);
+    }
+}
+
+pub fn load_installed_apps() -> Vec<AppItem> {
+    let db_path = apps_db_path();
+    if let Ok(content) = fs::read_to_string(&db_path) {
+        if let Ok(apps) = serde_json::from_str::<Vec<AppItem>>(&content) {
+            if !apps.is_empty() {
+                return apps;
+            }
+        }
+    }
+    seed_apps()
+}
+
+pub fn install_app_files(pending: &PendingInstall) -> Result<PathBuf, String> {
+    let storage_dir = app_storage_dir(&pending.id);
+    fs::create_dir_all(&storage_dir)
+        .map_err(|e| format!("Gagal membuat direktori {}: {}", storage_dir.display(), e))?;
+
+    let target_binary = app_installed_binary_path(&pending.id);
+
+    // If source_path is present, copy the file
+    if let Some(ref src) = pending.source_path {
+        fs::copy(src, &target_binary)
+            .map_err(|e| format!("Gagal menyalin AppImage ke {}: {}", target_binary.display(), e))?;
+
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let _ = fs::set_permissions(&target_binary, fs::Permissions::from_mode(0o755));
+        }
+    }
+
+    // Write .desktop entry to ~/.local/share/applications/madsquash-<id>.desktop
+    let apps_dir = applications_dir();
+    let _ = fs::create_dir_all(&apps_dir);
+    let desktop_file = app_desktop_entry_path(&pending.id);
+
+    let icon_field = if let Some(ref icon) = pending.icon_path {
+        format!("Icon={}\n", icon.to_string_lossy())
+    } else {
+        String::new()
+    };
+
+    let categories_field = pending
+        .categories
+        .as_deref()
+        .unwrap_or("Utility;Application;");
+
+    let desktop_content = format!(
+        "[Desktop Entry]\n\
+         Type=Application\n\
+         Name={}\n\
+         Comment={}\n\
+         Exec=\"{}\" %U\n\
+         {}\
+         Terminal=false\n\
+         Categories={}\n\
+         StartupNotify=true\n\
+         X-AppImage-Version={}\n",
+        pending.name,
+        pending.comment,
+        target_binary.to_string_lossy(),
+        icon_field,
+        categories_field,
+        pending.version
+    );
+
+    fs::write(&desktop_file, desktop_content)
+        .map_err(|e| format!("Gagal membuat berkas desktop {}: {}", desktop_file.display(), e))?;
+
+    // Refresh OS desktop database if available
+    let _ = std::process::Command::new("update-desktop-database")
+        .arg(&apps_dir)
+        .output();
+
+    Ok(target_binary)
+}
+
+pub fn uninstall_app_files(id: &str) -> Result<(), String> {
+    let storage_dir = app_storage_dir(id);
+    if storage_dir.exists() {
+        let _ = fs::remove_dir_all(&storage_dir);
+    }
+
+    let desktop_file = app_desktop_entry_path(id);
+    if desktop_file.exists() {
+        let _ = fs::remove_file(&desktop_file);
+    }
+
+    let apps_dir = applications_dir();
+    let _ = std::process::Command::new("update-desktop-database")
+        .arg(&apps_dir)
+        .output();
+
+    Ok(())
+}
+
+pub fn launch_app(id: &str) -> Result<(), String> {
+    let binary = app_installed_binary_path(id);
+    if !binary.exists() {
+        return Err(format!("Berkas binary tidak ditemukan di {}", binary.display()));
+    }
+
+    std::process::Command::new(&binary)
+        .spawn()
+        .map_err(|e| format!("Gagal menjalankan aplikasi: {}", e))?;
+
+    Ok(())
 }
 
 pub fn known_comment(id: &str) -> &'static str {
@@ -529,5 +677,36 @@ mod tests {
         if let Some(ref icon) = details.icon_path {
             assert!(icon.exists());
         }
+    }
+
+    #[test]
+    fn test_install_and_uninstall_lifecycle() {
+        let dummy_id = "test-dummy-app";
+        let pending = PendingInstall {
+            id: dummy_id.into(),
+            name: "Dummy App".into(),
+            version: "1.0.0".into(),
+            size: 1024,
+            file_name: "dummy-1.0.0.AppImage".into(),
+            comment: "Uji coba pasang".into(),
+            arch: "x86_64".into(),
+            app_type: "AppImage 2".into(),
+            exists: false,
+            source_path: None,
+            icon_path: None,
+            categories: Some("Utility;".into()),
+            exec: Some("dummy".into()),
+        };
+
+        // 1. Install
+        let target_binary = install_app_files(&pending).expect("Install failed");
+        assert_eq!(target_binary, app_installed_binary_path(dummy_id));
+        let desktop_file = app_desktop_entry_path(dummy_id);
+        assert!(desktop_file.exists());
+
+        // 2. Uninstall
+        uninstall_app_files(dummy_id).expect("Uninstall failed");
+        assert!(!desktop_file.exists());
+        assert!(!app_storage_dir(dummy_id).exists());
     }
 }

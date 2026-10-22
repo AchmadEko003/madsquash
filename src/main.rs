@@ -19,7 +19,8 @@ use crate::component::{
 };
 use crate::model::{
     AppItem, DialogKind, PendingInstall, compute_file_hash, inspect_appimage_metadata,
-    seed_apps, slug,
+    install_app_files, launch_app, load_installed_apps, save_installed_apps, seed_apps, slug,
+    uninstall_app_files,
 };
 
 pub struct MadsquashApp {
@@ -36,7 +37,7 @@ pub struct MadsquashApp {
 
 impl MadsquashApp {
     pub fn new(search_input: Entity<InputState>, cx: &mut Context<Self>) -> Self {
-        let apps = seed_apps();
+        let apps = load_installed_apps();
         let selected_id = apps.first().map(|a| a.id.clone());
 
         cx.subscribe(
@@ -228,32 +229,41 @@ impl MadsquashApp {
             return;
         };
 
-        let seed_str = format!("{}|{}|{}", pending.name, pending.size, pending.file_name);
-        let sha256 = compute_file_hash(pending.source_path.as_deref(), &seed_str);
+        match install_app_files(&pending) {
+            Ok(_) => {
+                let seed_str = format!("{}|{}|{}", pending.name, pending.size, pending.file_name);
+                let sha256 = compute_file_hash(pending.source_path.as_deref(), &seed_str);
 
-        let new_app = AppItem {
-            id: pending.id.clone(),
-            name: pending.name.clone(),
-            comment: pending.comment,
-            version: pending.version,
-            size: pending.size,
-            arch: pending.arch,
-            app_type: pending.app_type,
-            sha256,
-            installed_at: "22 Okt 2026".into(),
-            categories: pending.categories,
-            exec: pending.exec,
-            icon_path: pending.icon_path,
-        };
+                let new_app = AppItem {
+                    id: pending.id.clone(),
+                    name: pending.name.clone(),
+                    comment: pending.comment,
+                    version: pending.version,
+                    size: pending.size,
+                    arch: pending.arch,
+                    app_type: pending.app_type,
+                    sha256,
+                    installed_at: "22 Okt 2026".into(),
+                    categories: pending.categories,
+                    exec: pending.exec,
+                    icon_path: pending.icon_path,
+                };
 
-        self.apps.retain(|a| a.id != pending.id);
-        self.apps.insert(0, new_app);
-        self.selected_id = Some(pending.id);
-        self.dialog = None;
-        self.pending = None;
-        self.drop_error = None;
+                self.apps.retain(|a| a.id != pending.id);
+                self.apps.insert(0, new_app);
+                self.selected_id = Some(pending.id);
+                self.dialog = None;
+                self.pending = None;
+                self.drop_error = None;
+                save_installed_apps(&self.apps);
 
-        self.show_toast(format!("{} dipasang ke menu", pending.name), cx);
+                self.show_toast(format!("{} dipasang ke menu", pending.name), cx);
+            }
+            Err(e) => {
+                self.drop_error = Some(e);
+                cx.notify();
+            }
+        }
     }
 
     pub fn confirm_remove(&mut self, cx: &mut Context<Self>) {
@@ -263,14 +273,35 @@ impl MadsquashApp {
         let name = selected.name;
         let id = selected.id;
 
+        let _ = uninstall_app_files(&id);
         self.apps.retain(|a| a.id != id);
         self.selected_id = self.apps.first().map(|a| a.id.clone());
         self.dialog = None;
+        save_installed_apps(&self.apps);
         self.show_toast(format!("{} dilepas", name), cx);
+    }
+
+    pub fn launch_app(&mut self, id: &str, cx: &mut Context<Self>) {
+        let app_name = self
+            .apps
+            .iter()
+            .find(|a| a.id == id)
+            .map(|a| a.name.clone())
+            .unwrap_or_else(|| "Aplikasi".to_string());
+
+        match launch_app(id) {
+            Ok(()) => {
+                self.show_toast(format!("Membuka {}", app_name), cx);
+            }
+            Err(e) => {
+                self.show_toast(e, cx);
+            }
+        }
     }
 
     pub fn reset_seed(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.apps = seed_apps();
+        save_installed_apps(&self.apps);
         self.selected_id = self.apps.first().map(|a| a.id.clone());
         self.query.clear();
         self.search_input

@@ -3710,6 +3710,8 @@ version = "0.1.0"
 dependencies = [
  "backhand",
  "gpui-kit",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

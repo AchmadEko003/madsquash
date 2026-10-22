@@ -53,7 +53,7 @@ pub fn render_detail_container(
 
 pub fn render_detail_pane(app: &AppItem, cx: &mut Context<MadsquashApp>) -> impl IntoElement {
     let app_clone = app.clone();
-    let app_name = app.name.clone();
+    let app_id = app.id.clone();
 
     let app_type_display = if app.app_type.starts_with("AppImage") {
         app.app_type.clone()
@@ -133,7 +133,7 @@ pub fn render_detail_pane(app: &AppItem, cx: &mut Context<MadsquashApp>) -> impl
                         .active(|s| s.bg(rgb(0x09a5d4)))
                         .child("Jalankan")
                         .on_click(cx.listener(move |this, _, _, cx| {
-                            this.show_toast(format!("Membuka {}", app_name), cx);
+                            this.launch_app(&app_id, cx);
                         })),
                 )
                 .child(
