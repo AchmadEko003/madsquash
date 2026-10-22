@@ -5,8 +5,9 @@ VERSION="${1:-0.1.0}"
 VERSION="${VERSION#v}" # strip leading 'v' if present
 ARCH="amd64"
 RPM_ARCH="x86_64"
-DIST_DIR="$(pwd)/dist"
-RELEASE_BIN="$(pwd)/target/release/madsquash"
+ROOT_DIR="$(pwd)"
+DIST_DIR="${ROOT_DIR}/dist"
+RELEASE_BIN="${ROOT_DIR}/target/release/madsquash"
 
 echo "=== Building Madsquash v${VERSION} (${ARCH}) Packages ==="
 
@@ -19,7 +20,7 @@ rm -rf "${DIST_DIR}"
 mkdir -p "${DIST_DIR}"
 
 # -------------------------------------------------------------
-# 1. Build .deb package
+# 1. Build .deb package (Debian / Ubuntu / Mint)
 # -------------------------------------------------------------
 echo "--> Creating .deb package..."
 DEB_DIR="$(mktemp -d)/madsquash_${VERSION}_${ARCH}"
@@ -29,8 +30,8 @@ mkdir -p "${DEB_DIR}/usr/share/applications"
 mkdir -p "${DEB_DIR}/usr/share/icons/hicolor/scalable/apps"
 
 install -m 755 "${RELEASE_BIN}" "${DEB_DIR}/usr/bin/madsquash"
-install -m 644 assets/madsquash.desktop "${DEB_DIR}/usr/share/applications/madsquash.desktop"
-install -m 644 assets/madsquash.svg "${DEB_DIR}/usr/share/icons/hicolor/scalable/apps/madsquash.svg"
+install -m 644 "${ROOT_DIR}/assets/madsquash.desktop" "${DEB_DIR}/usr/share/applications/madsquash.desktop"
+install -m 644 "${ROOT_DIR}/assets/madsquash.svg" "${DEB_DIR}/usr/share/icons/hicolor/scalable/apps/madsquash.svg"
 
 cat <<EOF > "${DEB_DIR}/DEBIAN/control"
 Package: madsquash
@@ -51,13 +52,13 @@ rm -rf "${DEB_DIR}"
 echo "✓ Created: ${DIST_DIR}/madsquash_${VERSION}_amd64.deb"
 
 # -------------------------------------------------------------
-# 2. Build .rpm package
+# 2. Build .rpm package (Fedora / RHEL / openSUSE)
 # -------------------------------------------------------------
 echo "--> Creating .rpm package..."
 if command -v alien >/dev/null 2>&1; then
     (
         cd "${DIST_DIR}"
-        alien -r --nodeps "madsquash_${VERSION}_amd64.deb"
+        alien -r -c -k "madsquash_${VERSION}_amd64.deb"
     )
     echo "✓ Created .rpm package in ${DIST_DIR}"
 elif command -v rpmbuild >/dev/null 2>&1; then
@@ -65,8 +66,8 @@ elif command -v rpmbuild >/dev/null 2>&1; then
     mkdir -p "${RPM_ROOT}"/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
     mkdir -p "${RPM_ROOT}/BUILDROOT/madsquash-${VERSION}-1.${RPM_ARCH}"/usr/{bin,share/applications,share/icons/hicolor/scalable/apps}
     install -m 755 "${RELEASE_BIN}" "${RPM_ROOT}/BUILDROOT/madsquash-${VERSION}-1.${RPM_ARCH}/usr/bin/madsquash"
-    install -m 644 assets/madsquash.desktop "${RPM_ROOT}/BUILDROOT/madsquash-${VERSION}-1.${RPM_ARCH}/usr/share/applications/"
-    install -m 644 assets/madsquash.svg "${RPM_ROOT}/BUILDROOT/madsquash-${VERSION}-1.${RPM_ARCH}/usr/share/icons/hicolor/scalable/apps/"
+    install -m 644 "${ROOT_DIR}/assets/madsquash.desktop" "${RPM_ROOT}/BUILDROOT/madsquash-${VERSION}-1.${RPM_ARCH}/usr/share/applications/"
+    install -m 644 "${ROOT_DIR}/assets/madsquash.svg" "${RPM_ROOT}/BUILDROOT/madsquash-${VERSION}-1.${RPM_ARCH}/usr/share/icons/hicolor/scalable/apps/"
     
     cat <<EOF > "${RPM_ROOT}/SPECS/madsquash.spec"
 Name:           madsquash
@@ -94,7 +95,46 @@ else
 fi
 
 # -------------------------------------------------------------
-# 3. Build .AppImage package
+# 3. Build Arch Linux package (.pkg.tar.zst)
+# -------------------------------------------------------------
+echo "--> Creating Arch .pkg.tar.zst package..."
+ARCH_PKG_DIR="$(mktemp -d)/archpkg"
+mkdir -p "${ARCH_PKG_DIR}/usr/bin"
+mkdir -p "${ARCH_PKG_DIR}/usr/share/applications"
+mkdir -p "${ARCH_PKG_DIR}/usr/share/icons/hicolor/scalable/apps"
+
+install -m 755 "${RELEASE_BIN}" "${ARCH_PKG_DIR}/usr/bin/madsquash"
+install -m 644 "${ROOT_DIR}/assets/madsquash.desktop" "${ARCH_PKG_DIR}/usr/share/applications/madsquash.desktop"
+install -m 644 "${ROOT_DIR}/assets/madsquash.svg" "${ARCH_PKG_DIR}/usr/share/icons/hicolor/scalable/apps/madsquash.svg"
+
+INST_SIZE=$(du -sb "${ARCH_PKG_DIR}" | cut -f1)
+BUILD_DATE=$(date +%s)
+
+cat <<EOF > "${ARCH_PKG_DIR}/.PKGINFO"
+pkgname = madsquash
+pkgbase = madsquash
+pkgver = ${VERSION}-1
+pkgdesc = Modern pure-Rust AppImage manager and runner
+url = https://github.com/AchmadEko003/madsquash
+builddate = ${BUILD_DATE}
+packager = Achmad Eko <achmad@madsquash.local>
+size = ${INST_SIZE}
+arch = x86_64
+license = MIT
+depend = libxcb
+depend = libxkbcommon
+depend = libxkbcommon-x11
+EOF
+
+(
+    cd "${ARCH_PKG_DIR}"
+    tar -cf - .PKGINFO usr | zstd -19 -T0 -o "${DIST_DIR}/madsquash-${VERSION}-1-x86_64.pkg.tar.zst"
+)
+rm -rf "${ARCH_PKG_DIR}"
+echo "✓ Created: ${DIST_DIR}/madsquash-${VERSION}-1-x86_64.pkg.tar.zst"
+
+# -------------------------------------------------------------
+# 4. Build .AppImage package
 # -------------------------------------------------------------
 echo "--> Creating .AppImage package..."
 APPDIR="$(mktemp -d)/AppDir"
@@ -103,17 +143,18 @@ mkdir -p "${APPDIR}/usr/share/applications"
 mkdir -p "${APPDIR}/usr/share/icons/hicolor/scalable/apps"
 
 install -m 755 "${RELEASE_BIN}" "${APPDIR}/usr/bin/madsquash"
-install -m 755 assets/AppRun "${APPDIR}/AppRun"
-install -m 644 assets/madsquash.desktop "${APPDIR}/madsquash.desktop"
-install -m 644 assets/madsquash.desktop "${APPDIR}/usr/share/applications/madsquash.desktop"
-install -m 644 assets/madsquash.svg "${APPDIR}/madsquash.svg"
-install -m 644 assets/madsquash.svg "${APPDIR}/.DirIcon"
-install -m 644 assets/madsquash.svg "${APPDIR}/usr/share/icons/hicolor/scalable/apps/madsquash.svg"
+install -m 755 "${ROOT_DIR}/assets/AppRun" "${APPDIR}/AppRun"
+install -m 644 "${ROOT_DIR}/assets/madsquash.desktop" "${APPDIR}/madsquash.desktop"
+install -m 644 "${ROOT_DIR}/assets/madsquash.desktop" "${APPDIR}/usr/share/applications/madsquash.desktop"
+install -m 644 "${ROOT_DIR}/assets/madsquash.svg" "${APPDIR}/madsquash.svg"
+install -m 644 "${ROOT_DIR}/assets/madsquash.svg" "${APPDIR}/.DirIcon"
+install -m 644 "${ROOT_DIR}/assets/madsquash.svg" "${APPDIR}/usr/share/icons/hicolor/scalable/apps/madsquash.svg"
 
-# Use existing appimagetool or download if in CI
 APPIMAGETOOL=""
 if command -v appimagetool >/dev/null 2>&1; then
     APPIMAGETOOL="appimagetool"
+elif [ -f "${ROOT_DIR}/appimagetool-x86_64.AppImage" ]; then
+    APPIMAGETOOL="${ROOT_DIR}/appimagetool-x86_64.AppImage"
 elif [ -f "./appimagetool-x86_64.AppImage" ]; then
     APPIMAGETOOL="./appimagetool-x86_64.AppImage"
 fi

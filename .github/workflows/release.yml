@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   build-and-release:
-    name: Build & Release (.deb, .rpm, .AppImage)
+    name: Build & Release (.deb, .rpm, .pkg.tar.zst, .AppImage)
     runs-on: ubuntu-22.04
 
     steps:
@@ -40,6 +40,7 @@ jobs:
             alien \
             rpm \
             wget \
+            zstd \
             desktop-file-utils
 
       - name: Download AppImageTool
@@ -77,6 +78,7 @@ jobs:
           files: |
             dist/*.deb
             dist/*.rpm
+            dist/*.pkg.tar.zst
             dist/*.AppImage
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
