@@ -9,10 +9,10 @@ pub fn render_toast(toast_msg: String) -> impl IntoElement {
         .justify_center()
         .child(
             div()
-                .bg(rgb(0x0e1823))
+                .bg(rgb(0x182430))
                 .border_1()
-                .border_color(rgb(0x0fc5fc))
-                .text_color(rgb(0xf0f6fc))
+                .border_color(rgb(0x5bbfe6))
+                .text_color(rgb(0xe8edf4))
                 .font_weight(FontWeight::SEMIBOLD)
                 .text_xs()
                 .px_4()
@@ -26,7 +26,7 @@ pub fn render_toast(toast_msg: String) -> impl IntoElement {
                     div()
                         .size(px(6.))
                         .rounded_full()
-                        .bg(rgb(0x0fc5fc)),
+                        .bg(rgb(0x5bbfe6)),
                 )
                 .child(toast_msg),
         )

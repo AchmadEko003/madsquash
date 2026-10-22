@@ -349,12 +349,12 @@ impl Render for MadsquashApp {
             .id("madsquash-root")
             .relative()
             .size_full()
-            .bg(rgb(0x0a0e14))
-            .text_color(rgb(0xf0f6fc))
+            .bg(rgb(0x13161c))
+            .text_color(rgb(0xe8edf4))
             .flex()
             .flex_row()
             .drag_over::<ExternalPaths>(|s, _, _, _| {
-                s.border_2().border_dashed().border_color(rgb(0x0fc5fc)).bg(rgb(0x08131d))
+                s.border_2().border_dashed().border_color(rgb(0x5bbfe6)).bg(rgb(0x162533))
             })
             .on_drop(cx.listener(|this, paths: &ExternalPaths, _window, cx| {
                 this.handle_dropped_paths(paths, cx);

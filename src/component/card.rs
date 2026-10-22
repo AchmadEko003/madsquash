@@ -26,18 +26,18 @@ pub fn render_app_card(
         .rounded_2xl()
         .border_1()
         .border_color(if is_selected {
-            rgb(0x0fc5fc)
+            rgb(0x5bbfe6)
         } else {
-            rgb(0x1a2434)
+            rgb(0x222a36)
         })
         .bg(if is_selected {
-            rgb(0x0b1e2c)
+            rgb(0x162533)
         } else {
-            rgb(0x0e141d)
+            rgb(0x171c24)
         })
         .hover(|s| {
             if !is_selected {
-                s.bg(rgb(0x131d2a)).border_color(rgb(0x2c3e56))
+                s.bg(rgb(0x1c222c)).border_color(rgb(0x2e3a4b))
             } else {
                 s
             }
@@ -59,12 +59,12 @@ pub fn render_app_card(
                     div()
                         .size(px(44.))
                         .rounded_xl()
-                        .bg(rgb(0x141c28))
+                        .bg(rgb(0x1b222c))
                         .border_1()
                         .border_color(if is_selected {
-                            rgb(0x0fc5fc)
+                            rgb(0x5bbfe6)
                         } else {
-                            rgb(0x202d40)
+                            rgb(0x283240)
                         })
                         .p(px(3.))
                         .flex()
@@ -75,14 +75,14 @@ pub fn render_app_card(
                     div()
                         .size(px(44.))
                         .rounded_xl()
-                        .bg(rgb(0x141c28))
+                        .bg(rgb(0x1b222c))
                         .border_1()
                         .border_color(if is_selected {
-                            rgb(0x0fc5fc)
+                            rgb(0x5bbfe6)
                         } else {
-                            rgb(0x202d40)
+                            rgb(0x283240)
                         })
-                        .text_color(rgb(0x0fc5fc))
+                        .text_color(rgb(0x7bc7e8))
                         .font_weight(FontWeight::BOLD)
                         .text_sm()
                         .flex()
@@ -96,22 +96,22 @@ pub fn render_app_card(
                         .py_0p5()
                         .rounded_full()
                         .bg(if is_selected {
-                            rgb(0x103448)
+                            rgb(0x1d3345)
                         } else {
-                            rgb(0x151f2b)
+                            rgb(0x1c2430)
                         })
                         .border_1()
                         .border_color(if is_selected {
-                            rgb(0x0fc5fc)
+                            rgb(0x5bbfe6)
                         } else {
-                            rgb(0x223043)
+                            rgb(0x2a384a)
                         })
                         .text_xs()
                         .font_weight(FontWeight::SEMIBOLD)
                         .text_color(if is_selected {
-                            rgb(0x0fc5fc)
+                            rgb(0x7bc7e8)
                         } else {
-                            rgb(0x8b9bb4)
+                            rgb(0x94a3b8)
                         })
                         .child(ver_label),
                 ),
@@ -126,13 +126,13 @@ pub fn render_app_card(
                     div()
                         .text_sm()
                         .font_weight(FontWeight::BOLD)
-                        .text_color(rgb(0xf0f6fc))
+                        .text_color(rgb(0xe8edf4))
                         .child(app.name),
                 )
                 .child(
                     div()
                         .text_xs()
-                        .text_color(rgb(0x7e8fa6))
+                        .text_color(rgb(0x8a99ad))
                         .child(format!("{} · {}", format_bytes(app.size), app.arch)),
                 ),
         )
@@ -181,18 +181,18 @@ pub fn render_list_pane(
                                             .rounded_2xl()
                                             .border_2()
                                             .border_dashed()
-                                            .border_color(rgb(0x223043))
+                                            .border_color(rgb(0x252e3c))
                                             .flex()
                                             .items_center()
                                             .justify_center()
-                                            .text_color(rgb(0x506079))
+                                            .text_color(rgb(0x64748b))
                                             .child("✦"),
                                     )
                                     .child(
                                         div()
                                             .text_sm()
                                             .font_weight(FontWeight::MEDIUM)
-                                            .text_color(rgb(0x8b9bb4))
+                                            .text_color(rgb(0x94a3b8))
                                             .child(if query_is_empty {
                                                 "Belum ada AppImage terpasang di slot."
                                             } else {
@@ -212,7 +212,7 @@ pub fn render_list_pane(
             div()
                 .pt_3()
                 .border_t_1()
-                .border_color(rgb(0x182230))
+                .border_color(rgb(0x202630))
                 .flex()
                 .items_center()
                 .justify_between()
@@ -222,8 +222,8 @@ pub fn render_list_pane(
                         .cursor_pointer()
                         .text_xs()
                         .font_weight(FontWeight::MEDIUM)
-                        .text_color(rgb(0x506079))
-                        .hover(|s| s.text_color(rgb(0x0fc5fc)))
+                        .text_color(rgb(0x64748b))
+                        .hover(|s| s.text_color(rgb(0x7bc7e8)))
                         .child("↻ Kembalikan contoh bawaan")
                         .on_click(cx.listener(|this, _, window, cx| {
                             this.reset_seed(window, cx);

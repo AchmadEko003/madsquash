@@ -17,7 +17,7 @@ pub fn render_install_dialog(
         .id("install-dialog-overlay")
         .absolute()
         .inset_0()
-        .bg(rgba(0x04070be6))
+        .bg(rgba(0x0e1116e6))
         .flex()
         .items_center()
         .justify_center()
@@ -33,9 +33,9 @@ pub fn render_install_dialog(
                 .w(px(460.))
                 .p_6()
                 .rounded_2xl()
-                .bg(rgb(0x0e141d))
+                .bg(rgb(0x171c24))
                 .border_1()
-                .border_color(rgb(0x1a2636))
+                .border_color(rgb(0x222a36))
                 .shadow_2xl()
                 .flex()
                 .flex_col()
@@ -50,7 +50,7 @@ pub fn render_install_dialog(
                             div()
                                 .text_lg()
                                 .font_weight(FontWeight::BOLD)
-                                .text_color(rgb(0xf0f6fc))
+                                .text_color(rgb(0xe8edf4))
                                 .child("Pasang AppImage"),
                         )
                         .child(
@@ -61,9 +61,9 @@ pub fn render_install_dialog(
                                 .flex()
                                 .items_center()
                                 .justify_center()
-                                .text_color(rgb(0x506079))
+                                .text_color(rgb(0x64748b))
                                 .cursor_pointer()
-                                .hover(|s| s.text_color(rgb(0xf0f6fc)))
+                                .hover(|s| s.text_color(rgb(0xe8edf4)))
                                 .child("✕")
                                 .on_click(cx.listener(|this, _, _, cx| {
                                     this.close_dialog(cx);
@@ -73,7 +73,7 @@ pub fn render_install_dialog(
                 .child(
                     div()
                         .text_xs()
-                        .text_color(rgb(0x7e8fa6))
+                        .text_color(rgb(0x94a3b8))
                         .child("Berkas disalin ke direktori aplikasi Madsquash, lalu didaftarkan ke launcher OS."),
                 )
                 .child(match pending {
@@ -94,13 +94,13 @@ pub fn render_install_dialog(
                                 .py_2()
                                 .rounded_xl()
                                 .border_1()
-                                .border_color(rgb(0x1f2c3e))
-                                .bg(rgb(0x111925))
-                                .text_color(rgb(0xf0f6fc))
+                                .border_color(rgb(0x252e3c))
+                                .bg(rgb(0x1b212b))
+                                .text_color(rgb(0xe8edf4))
                                 .text_xs()
                                 .font_weight(FontWeight::MEDIUM)
                                 .cursor_pointer()
-                                .hover(|s| s.bg(rgb(0x162334)))
+                                .hover(|s| s.bg(rgb(0x222a36)))
                                 .child("Batal")
                                 .on_click(cx.listener(|this, _, _, cx| {
                                     this.close_dialog(cx);
@@ -113,12 +113,12 @@ pub fn render_install_dialog(
                                     .px_5()
                                     .py_2()
                                     .rounded_xl()
-                                    .bg(rgb(0x0fc5fc))
-                                    .text_color(rgb(0x06151c))
+                                    .bg(rgb(0x5bbfe6))
+                                    .text_color(rgb(0x0f202b))
                                     .font_weight(FontWeight::BOLD)
                                     .text_xs()
                                     .cursor_pointer()
-                                    .hover(|s| s.bg(rgb(0x38d3ff)))
+                                    .hover(|s| s.bg(rgb(0x6ec8ed)))
                                     .child(if is_exists { "Ganti Versi Ini" } else { "Pasang ke Menu" })
                                     .on_click(cx.listener(|this, _, _, cx| {
                                         this.confirm_install(cx);
@@ -148,16 +148,16 @@ pub fn render_drop_zone(
                 .border_2()
                 .when(!has_error, |this| {
                     this.border_dashed()
-                        .border_color(rgb(0x1f2c3e))
-                        .bg(rgb(0x090e15))
+                        .border_color(rgb(0x252e3c))
+                        .bg(rgb(0x13171e))
                 })
                 .when(has_error, |this| {
-                    this.border_color(rgb(0xf87171)).bg(rgb(0x1a0d10))
+                    this.border_color(rgb(0xfca5a5)).bg(rgb(0x2d1b1f))
                 })
                 .cursor_pointer()
-                .hover(|s| s.border_color(rgb(0x0fc5fc)).bg(rgb(0x0c1e2b)))
+                .hover(|s| s.border_color(rgb(0x5bbfe6)).bg(rgb(0x172533)))
                 .drag_over::<ExternalPaths>(|s, _, _, _| {
-                    s.border_color(rgb(0x0fc5fc)).bg(rgb(0x0c1e2b))
+                    s.border_color(rgb(0x5bbfe6)).bg(rgb(0x172533))
                 })
                 .on_drop(cx.listener(|this, paths: &ExternalPaths, _window, cx| {
                     this.handle_dropped_paths(paths, cx);
@@ -174,13 +174,13 @@ pub fn render_drop_zone(
                     div()
                         .size(px(36.))
                         .rounded_xl()
-                        .bg(rgb(0x101b27))
+                        .bg(rgb(0x1b242e))
                         .border_1()
-                        .border_color(rgb(0x1c374d))
+                        .border_color(rgb(0x28394a))
                         .flex()
                         .items_center()
                         .justify_center()
-                        .text_color(rgb(0x0fc5fc))
+                        .text_color(rgb(0x7bc7e8))
                         .text_lg()
                         .child("↓"),
                 )
@@ -189,16 +189,16 @@ pub fn render_drop_zone(
                         .text_sm()
                         .font_weight(FontWeight::BOLD)
                         .text_color(if has_error {
-                            rgb(0xf87171)
+                            rgb(0xfca5a5)
                         } else {
-                            rgb(0xf0f6fc)
+                            rgb(0xe8edf4)
                         })
                         .child(headline),
                 )
                 .child(
                     div()
                         .text_xs()
-                        .text_color(rgb(0x7e8fa6))
+                        .text_color(rgb(0x94a3b8))
                         .child("atau klik di sini untuk memilih berkas dari komputer"),
                 ),
         )
@@ -208,8 +208,8 @@ pub fn render_drop_zone(
                 .cursor_pointer()
                 .text_xs()
                 .font_weight(FontWeight::MEDIUM)
-                .text_color(rgb(0x0fc5fc))
-                .hover(|s| s.text_color(rgb(0x38d3ff)))
+                .text_color(rgb(0x7bc7e8))
+                .hover(|s| s.text_color(rgb(0x5bbfe6)))
                 .child("✦ Coba pasang contoh Kdenlive 25.04.0")
                 .on_click(cx.listener(|this, _, _, cx| {
                     this.set_sample_pending(cx);
@@ -239,7 +239,7 @@ pub fn render_install_preview(
                 .child(
                     div()
                         .text_xs()
-                        .text_color(rgb(0x7e8fa6))
+                        .text_color(rgb(0x94a3b8))
                         .child(pending.file_name.clone()),
                 )
                 .child(
@@ -248,8 +248,8 @@ pub fn render_install_preview(
                         .cursor_pointer()
                         .text_xs()
                         .font_weight(FontWeight::SEMIBOLD)
-                        .text_color(rgb(0x0fc5fc))
-                        .hover(|s| s.text_color(rgb(0x38d3ff)))
+                        .text_color(rgb(0x7bc7e8))
+                        .hover(|s| s.text_color(rgb(0x5bbfe6)))
                         .child("Ganti berkas")
                         .on_click(cx.listener(|this, _, _, cx| {
                             this.browse_file(cx);
@@ -260,9 +260,9 @@ pub fn render_install_preview(
         .child(
             div()
                 .rounded_xl()
-                .bg(rgb(0x111925))
+                .bg(rgb(0x1b212b))
                 .border_1()
-                .border_color(rgb(0x1a2636))
+                .border_color(rgb(0x252e3c))
                 .p_3()
                 .flex()
                 .items_center()
@@ -271,9 +271,9 @@ pub fn render_install_preview(
                     div()
                         .size(px(48.))
                         .rounded_xl()
-                        .bg(rgb(0x141c28))
+                        .bg(rgb(0x171c24))
                         .border_1()
-                        .border_color(rgb(0x0fc5fc))
+                        .border_color(rgb(0x5bbfe6))
                         .p(px(3.))
                         .flex()
                         .items_center()
@@ -283,10 +283,10 @@ pub fn render_install_preview(
                     div()
                         .size(px(48.))
                         .rounded_xl()
-                        .bg(rgb(0x141c28))
+                        .bg(rgb(0x171c24))
                         .border_1()
-                        .border_color(rgb(0x0fc5fc))
-                        .text_color(rgb(0x0fc5fc))
+                        .border_color(rgb(0x5bbfe6))
+                        .text_color(rgb(0x7bc7e8))
                         .font_weight(FontWeight::BOLD)
                         .text_lg()
                         .flex()
@@ -304,13 +304,13 @@ pub fn render_install_preview(
                             div()
                                 .text_base()
                                 .font_weight(FontWeight::BOLD)
-                                .text_color(rgb(0xf0f6fc))
+                                .text_color(rgb(0xe8edf4))
                                 .child(pending.name.clone()),
                         )
                         .child(
                             div()
                                 .text_xs()
-                                .text_color(rgb(0x7e8fa6))
+                                .text_color(rgb(0x94a3b8))
                                 .child(if !pending.comment.is_empty() {
                                     pending.comment.clone()
                                 } else {
@@ -323,9 +323,9 @@ pub fn render_install_preview(
         .child(
             div()
                 .rounded_xl()
-                .bg(rgb(0x111925))
+                .bg(rgb(0x1b212b))
                 .border_1()
-                .border_color(rgb(0x1a2636))
+                .border_color(rgb(0x252e3c))
                 .p_3()
                 .flex()
                 .flex_col()
@@ -355,11 +355,11 @@ pub fn render_install_preview(
                 div()
                     .p_3()
                     .rounded_xl()
-                    .bg(rgb(0x122432))
+                    .bg(rgb(0x1b2a38))
                     .border_1()
-                    .border_color(rgb(0x0fc5fc))
+                    .border_color(rgb(0x5bbfe6))
                     .text_xs()
-                    .text_color(rgb(0xf0f6fc))
+                    .text_color(rgb(0xe8edf4))
                     .child(format!(
                         "ℹ {} sudah terpasang. Memasang kembali akan menimpa binary yang ada ke versi ini.",
                         pending.name
@@ -376,7 +376,7 @@ pub fn render_remove_dialog(
         .id("remove-dialog-overlay")
         .absolute()
         .inset_0()
-        .bg(rgba(0x04070be6))
+        .bg(rgba(0x0e1116e6))
         .flex()
         .items_center()
         .justify_center()
@@ -389,9 +389,9 @@ pub fn render_remove_dialog(
                 .w(px(420.))
                 .p_6()
                 .rounded_2xl()
-                .bg(rgb(0x0e141d))
+                .bg(rgb(0x171c24))
                 .border_1()
-                .border_color(rgb(0x1a2636))
+                .border_color(rgb(0x222a36))
                 .shadow_2xl()
                 .flex()
                 .flex_col()
@@ -401,13 +401,13 @@ pub fn render_remove_dialog(
                     div()
                         .size(px(40.))
                         .rounded_xl()
-                        .bg(rgb(0x241114))
+                        .bg(rgb(0x2d1b1f))
                         .border_1()
-                        .border_color(rgb(0x4c1d24))
+                        .border_color(rgb(0x4a262d))
                         .flex()
                         .items_center()
                         .justify_center()
-                        .text_color(rgb(0xf87171))
+                        .text_color(rgb(0xfca5a5))
                         .text_lg()
                         .child("⚠"),
                 )
@@ -415,13 +415,13 @@ pub fn render_remove_dialog(
                     div()
                         .text_lg()
                         .font_weight(FontWeight::BOLD)
-                        .text_color(rgb(0xf0f6fc))
+                        .text_color(rgb(0xe8edf4))
                         .child(format!("Lepas {}?", app_name)),
                 )
                 .child(
                     div()
                         .text_xs()
-                        .text_color(rgb(0x7e8fa6))
+                        .text_color(rgb(0x94a3b8))
                         .child("Entri launcher OS, ikon, dan berkas salinan AppImage di Madsquash akan dihapus dari sistem."),
                 )
                 .child(
@@ -437,13 +437,13 @@ pub fn render_remove_dialog(
                                 .py_2()
                                 .rounded_xl()
                                 .border_1()
-                                .border_color(rgb(0x1f2c3e))
-                                .bg(rgb(0x111925))
-                                .text_color(rgb(0xf0f6fc))
+                                .border_color(rgb(0x252e3c))
+                                .bg(rgb(0x1b212b))
+                                .text_color(rgb(0xe8edf4))
                                 .text_xs()
                                 .font_weight(FontWeight::MEDIUM)
                                 .cursor_pointer()
-                                .hover(|s| s.bg(rgb(0x162334)))
+                                .hover(|s| s.bg(rgb(0x222a36)))
                                 .child("Batal")
                                 .on_click(cx.listener(|this, _, _, cx| {
                                     this.close_dialog(cx);
@@ -455,12 +455,12 @@ pub fn render_remove_dialog(
                                 .px_5()
                                 .py_2()
                                 .rounded_xl()
-                                .bg(rgb(0xef4444))
+                                .bg(rgb(0xe05656))
                                 .text_color(rgb(0xffffff))
                                 .font_weight(FontWeight::BOLD)
                                 .text_xs()
                                 .cursor_pointer()
-                                .hover(|s| s.bg(rgb(0xdc2626)))
+                                .hover(|s| s.bg(rgb(0xc94343)))
                                 .child("Lepas Aplikasi")
                                 .on_click(cx.listener(|this, _, _, cx| {
                                     this.confirm_remove(cx);
