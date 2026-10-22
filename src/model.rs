@@ -96,12 +96,10 @@ pub fn load_installed_apps() -> Vec<AppItem> {
     let db_path = apps_db_path();
     if let Ok(content) = fs::read_to_string(&db_path) {
         if let Ok(apps) = serde_json::from_str::<Vec<AppItem>>(&content) {
-            if !apps.is_empty() {
-                return apps;
-            }
+            return apps;
         }
     }
-    seed_apps()
+    Vec::new()
 }
 
 pub fn install_app_files(pending: &PendingInstall) -> Result<PathBuf, String> {
@@ -587,6 +585,7 @@ pub fn inspect_appimage_metadata(path: &Path, file_name: &str) -> AppImageDetail
     details
 }
 
+#[allow(dead_code)]
 pub fn seed_apps() -> Vec<AppItem> {
     vec![
         AppItem {

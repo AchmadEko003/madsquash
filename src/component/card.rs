@@ -1,4 +1,3 @@
-use gpui_kit::prelude::FluentBuilder;
 use gpui_kit::*;
 
 use crate::MadsquashApp;
@@ -154,58 +153,156 @@ pub fn render_list_pane(
         .pt_4()
         .pb_4()
         .overflow_hidden()
-        // Scrollable Cards
+        // Scrollable Cards or Empty State
         .child(
             div()
                 .id("cards-scroll-container")
                 .flex_1()
                 .overflow_y_scroll()
-                .child(
+                .child(if visible.is_empty() {
+                    if query_is_empty {
+                        render_empty_apps_state(cx).into_any_element()
+                    } else {
+                        render_empty_search_state().into_any_element()
+                    }
+                } else {
                     div()
                         .flex()
                         .flex_wrap()
                         .gap_3p5()
                         .pb_4()
-                        .when(visible.is_empty(), |this| {
-                            this.child(
-                                div()
-                                    .w_full()
-                                    .py_12()
-                                    .flex()
-                                    .flex_col()
-                                    .items_center()
-                                    .justify_center()
-                                    .gap_3()
-                                    .child(
-                                        div()
-                                            .size(px(48.))
-                                            .rounded_2xl()
-                                            .border_2()
-                                            .border_dashed()
-                                            .border_color(rgb(0x252e3c))
-                                            .flex()
-                                            .items_center()
-                                            .justify_center()
-                                            .text_color(rgb(0x64748b))
-                                            .child("✦"),
-                                    )
-                                    .child(
-                                        div()
-                                            .text_sm()
-                                            .font_weight(FontWeight::MEDIUM)
-                                            .text_color(rgb(0x94a3b8))
-                                            .child(if query_is_empty {
-                                                "Belum ada AppImage terpasang di slot."
-                                            } else {
-                                                "Tidak ada aplikasi yang cocok dengan pencarian."
-                                            }),
-                                    ),
-                            )
-                        })
                         .children(visible.iter().map(|app| {
                             let is_selected = selected_id == Some(app.id.as_str());
                             render_app_card(app, is_selected, cx)
-                        })),
-                ),
+                        }))
+                        .into_any_element()
+                }),
         )
+}
+
+fn render_empty_apps_state(cx: &mut Context<MadsquashApp>) -> impl IntoElement {
+    div()
+        .w_full()
+        .min_h(px(400.))
+        .flex()
+        .flex_col()
+        .items_center()
+        .justify_center()
+        .gap_3p5()
+        .py_12()
+        .px_4()
+        .child(
+            div()
+                .size(px(72.))
+                .rounded_2xl()
+                .bg(rgb(0x182433))
+                .border_1()
+                .border_color(rgb(0x283d54))
+                .flex()
+                .items_center()
+                .justify_center()
+                .text_2xl()
+                .text_color(rgb(0x7bc7e8))
+                .child("✦"),
+        )
+        .child(
+            div()
+                .text_base()
+                .font_weight(FontWeight::BOLD)
+                .text_color(rgb(0xf1f5f9))
+                .child("Belum Ada Aplikasi Terpasang"),
+        )
+        .child(
+            div()
+                .text_xs()
+                .text_color(rgb(0x8a99ad))
+                .text_center()
+                .max_w(px(380.))
+                .child("Tarik & jatuhkan berkas .AppImage langsung ke jendela ini, atau klik tombol di bawah untuk memasang aplikasi pertama Anda."),
+        )
+        .child(
+            div()
+                .id("empty-state-install-btn")
+                .mt_2()
+                .px_5()
+                .py_2p5()
+                .rounded_xl()
+                .bg(rgb(0x5bbfe6))
+                .hover(|s| s.bg(rgb(0x70c9ec)))
+                .active(|s| s.bg(rgb(0x4baed7)))
+                .text_color(rgb(0x0c141d))
+                .text_xs()
+                .font_weight(FontWeight::BOLD)
+                .cursor_pointer()
+                .shadow_md()
+                .child("+ Pasang Berkas AppImage")
+                .on_click(cx.listener(|this, _, _, cx| {
+                    this.open_install(cx);
+                })),
+        )
+        .child(
+            div()
+                .flex()
+                .flex_wrap()
+                .items_center()
+                .justify_center()
+                .gap_2()
+                .mt_4()
+                .child(render_empty_pill("⚡ Ekstraksi Cepat SquashFS"))
+                .child(render_empty_pill("🚀 Integrasi Menu & Desktop"))
+                .child(render_empty_pill("🔒 Aman & Terisolasi")),
+        )
+}
+
+fn render_empty_search_state() -> impl IntoElement {
+    div()
+        .w_full()
+        .min_h(px(320.))
+        .flex()
+        .flex_col()
+        .items_center()
+        .justify_center()
+        .gap_3()
+        .py_12()
+        .px_4()
+        .child(
+            div()
+                .size(px(56.))
+                .rounded_2xl()
+                .bg(rgb(0x171c24))
+                .border_1()
+                .border_color(rgb(0x222a36))
+                .flex()
+                .items_center()
+                .justify_center()
+                .text_xl()
+                .text_color(rgb(0x64748b))
+                .child("🔍"),
+        )
+        .child(
+            div()
+                .text_sm()
+                .font_weight(FontWeight::BOLD)
+                .text_color(rgb(0xe8edf4))
+                .child("Tidak Ada Aplikasi yang Cocok"),
+        )
+        .child(
+            div()
+                .text_xs()
+                .text_color(rgb(0x8a99ad))
+                .child("Coba gunakan kata kunci pencarian lain."),
+        )
+}
+
+fn render_empty_pill(text: &'static str) -> impl IntoElement {
+    div()
+        .px_3()
+        .py_1()
+        .rounded_full()
+        .bg(rgb(0x161c24))
+        .border_1()
+        .border_color(rgb(0x222a36))
+        .text_xs()
+        .text_color(rgb(0x728296))
+        .child(text)
 }
