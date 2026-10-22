@@ -2,7 +2,7 @@
 name = "madsquash"
 version = "0.1.0"
 edition = "2024"
-description = "Modern pure-Rust AppImage manager and runner"
+description = "AppImage manager and runner by Madko"
 repository = "https://github.com/AchmadEko003/madsquash"
 license = "MIT"
 
@@ -11,3 +11,10 @@ backhand = "0.25.5"
 gpui-kit = "0.8.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+
+[profile.release]
+opt-level = "s"         # Mengoptimalkan ukuran binary (size optimization)
+lto = true              # Link-Time Optimization (memangkas kode yang tidak terpakai antar-crate)
+codegen-units = 1       # Maksimalkan optimasi ukuran lintas modul
+panic = "abort"         # Hapus tabel stack unwinding untuk memangkas ukuran
+strip = true            # Hapus semua simbol debug dan info yang tidak diperlukan secara otomatis
