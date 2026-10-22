@@ -12,26 +12,32 @@ pub fn render_app_card(
     let app_id = app.id.clone();
     let monogram = mono(&app.name);
 
+    let ver_label = if app.version != "—" && !app.version.starts_with('v') && !app.version.starts_with('V') {
+        format!("v{}", app.version)
+    } else {
+        app.version.clone()
+    };
+
     div()
         .id(format!("card-{}", app.id))
-        .w(px(200.))
-        .h(px(144.))
-        .p_3p5()
-        .rounded_xl()
+        .w(px(216.))
+        .h(px(150.))
+        .p_4()
+        .rounded_2xl()
         .border_1()
         .border_color(if is_selected {
             rgb(0x0fc5fc)
         } else {
-            rgb(0x3a342c)
+            rgb(0x1a2434)
         })
         .bg(if is_selected {
-            rgb(0x0e2532)
+            rgb(0x0b1e2c)
         } else {
-            rgb(0x221f1b)
+            rgb(0x0e141d)
         })
         .hover(|s| {
             if !is_selected {
-                s.border_color(rgb(0x5c5146))
+                s.bg(rgb(0x131d2a)).border_color(rgb(0x2c3e56))
             } else {
                 s
             }
@@ -43,29 +49,74 @@ pub fn render_app_card(
         .on_click(cx.listener(move |this, _, _, cx| {
             this.select_app(app_id.clone(), cx);
         }))
-        .child(if let Some(ref icon_path) = app.icon_path {
+        // Top row: Icon on left, version pill on right
+        .child(
             div()
-                .size(px(36.))
-                .rounded_lg()
-                .bg(rgb(0x141210))
-                .p(px(2.))
                 .flex()
-                .items_center()
-                .justify_center()
-                .child(gpui::img(icon_path.clone()).size(px(32.)))
-        } else {
-            div()
-                .size(px(36.))
-                .rounded_lg()
-                .bg(rgb(0x141210))
-                .text_color(rgb(0x0fc5fc))
-                .font_weight(FontWeight::BOLD)
-                .text_sm()
-                .flex()
-                .items_center()
-                .justify_center()
-                .child(monogram)
-        })
+                .items_start()
+                .justify_between()
+                .child(if let Some(ref icon_path) = app.icon_path {
+                    div()
+                        .size(px(44.))
+                        .rounded_xl()
+                        .bg(rgb(0x141c28))
+                        .border_1()
+                        .border_color(if is_selected {
+                            rgb(0x0fc5fc)
+                        } else {
+                            rgb(0x202d40)
+                        })
+                        .p(px(3.))
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .child(gpui::img(icon_path.clone()).size(px(36.)))
+                } else {
+                    div()
+                        .size(px(44.))
+                        .rounded_xl()
+                        .bg(rgb(0x141c28))
+                        .border_1()
+                        .border_color(if is_selected {
+                            rgb(0x0fc5fc)
+                        } else {
+                            rgb(0x202d40)
+                        })
+                        .text_color(rgb(0x0fc5fc))
+                        .font_weight(FontWeight::BOLD)
+                        .text_sm()
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .child(monogram)
+                })
+                .child(
+                    div()
+                        .px_2()
+                        .py_0p5()
+                        .rounded_full()
+                        .bg(if is_selected {
+                            rgb(0x103448)
+                        } else {
+                            rgb(0x151f2b)
+                        })
+                        .border_1()
+                        .border_color(if is_selected {
+                            rgb(0x0fc5fc)
+                        } else {
+                            rgb(0x223043)
+                        })
+                        .text_xs()
+                        .font_weight(FontWeight::SEMIBOLD)
+                        .text_color(if is_selected {
+                            rgb(0x0fc5fc)
+                        } else {
+                            rgb(0x8b9bb4)
+                        })
+                        .child(ver_label),
+                ),
+        )
+        // Bottom: App name and size/arch info
         .child(
             div()
                 .flex()
@@ -74,15 +125,15 @@ pub fn render_app_card(
                 .child(
                     div()
                         .text_sm()
-                        .font_weight(FontWeight::SEMIBOLD)
-                        .text_color(rgb(0xf4efe8))
+                        .font_weight(FontWeight::BOLD)
+                        .text_color(rgb(0xf0f6fc))
                         .child(app.name),
                 )
                 .child(
                     div()
                         .text_xs()
-                        .text_color(rgb(0xa3988c))
-                        .child(format!("{} · {}", app.version, format_bytes(app.size))),
+                        .text_color(rgb(0x7e8fa6))
+                        .child(format!("{} · {}", format_bytes(app.size), app.arch)),
                 ),
         )
 }
@@ -98,7 +149,8 @@ pub fn render_list_pane(
         .h_full()
         .flex()
         .flex_col()
-        .px_5()
+        .px_6()
+        .pt_4()
         .pb_4()
         .overflow_hidden()
         // Scrollable Cards
@@ -111,19 +163,42 @@ pub fn render_list_pane(
                     div()
                         .flex()
                         .flex_wrap()
-                        .gap_3()
+                        .gap_3p5()
                         .pb_4()
                         .when(visible.is_empty(), |this| {
                             this.child(
                                 div()
-                                    .text_sm()
-                                    .text_color(rgb(0xa3988c))
-                                    .py_8()
-                                    .child(if query_is_empty {
-                                        "Belum ada AppImage di slot."
-                                    } else {
-                                        "Tidak ada yang cocok."
-                                    }),
+                                    .w_full()
+                                    .py_12()
+                                    .flex()
+                                    .flex_col()
+                                    .items_center()
+                                    .justify_center()
+                                    .gap_3()
+                                    .child(
+                                        div()
+                                            .size(px(48.))
+                                            .rounded_2xl()
+                                            .border_2()
+                                            .border_dashed()
+                                            .border_color(rgb(0x223043))
+                                            .flex()
+                                            .items_center()
+                                            .justify_center()
+                                            .text_color(rgb(0x506079))
+                                            .child("✦"),
+                                    )
+                                    .child(
+                                        div()
+                                            .text_sm()
+                                            .font_weight(FontWeight::MEDIUM)
+                                            .text_color(rgb(0x8b9bb4))
+                                            .child(if query_is_empty {
+                                                "Belum ada AppImage terpasang di slot."
+                                            } else {
+                                                "Tidak ada aplikasi yang cocok dengan pencarian."
+                                            }),
+                                    ),
                             )
                         })
                         .children(visible.into_iter().map(|app| {
@@ -134,17 +209,25 @@ pub fn render_list_pane(
         )
         // Reset button
         .child(
-            div().pt_2().child(
-                div()
-                    .id("reset-btn")
-                    .cursor_pointer()
-                    .text_xs()
-                    .text_color(rgb(0xa3988c))
-                    .hover(|s| s.text_color(rgb(0xf4efe8)))
-                    .child("Kembalikan contoh")
-                    .on_click(cx.listener(|this, _, window, cx| {
-                        this.reset_seed(window, cx);
-                    })),
-            ),
+            div()
+                .pt_3()
+                .border_t_1()
+                .border_color(rgb(0x182230))
+                .flex()
+                .items_center()
+                .justify_between()
+                .child(
+                    div()
+                        .id("reset-btn")
+                        .cursor_pointer()
+                        .text_xs()
+                        .font_weight(FontWeight::MEDIUM)
+                        .text_color(rgb(0x506079))
+                        .hover(|s| s.text_color(rgb(0x0fc5fc)))
+                        .child("↻ Kembalikan contoh bawaan")
+                        .on_click(cx.listener(|this, _, window, cx| {
+                            this.reset_seed(window, cx);
+                        })),
+                ),
         )
 }

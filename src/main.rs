@@ -18,9 +18,9 @@ use crate::component::{
     toast::render_toast,
 };
 use crate::model::{
-    AppItem, DialogKind, PendingInstall, compute_file_hash, inspect_appimage_metadata,
-    install_app_files, launch_app, load_installed_apps, save_installed_apps, seed_apps, slug,
-    uninstall_app_files,
+    AppItem, DialogKind, PendingInstall, app_storage_dir, compute_file_hash,
+    inspect_appimage_metadata, install_app_files, launch_app, load_installed_apps,
+    save_installed_apps, seed_apps, slug, uninstall_app_files,
 };
 
 pub struct MadsquashApp {
@@ -299,6 +299,18 @@ impl MadsquashApp {
         }
     }
 
+    pub fn open_app_folder(&mut self, id: &str, cx: &mut Context<Self>) {
+        let folder = app_storage_dir(id);
+        if folder.exists() {
+            let _ = std::process::Command::new("xdg-open")
+                .arg(&folder)
+                .spawn();
+            self.show_toast("Membuka folder aplikasi...", cx);
+        } else {
+            self.show_toast("Folder belum ada di disk (pasang berkas terlebih dahulu)", cx);
+        }
+    }
+
     pub fn reset_seed(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.apps = seed_apps();
         save_installed_apps(&self.apps);
@@ -337,12 +349,12 @@ impl Render for MadsquashApp {
             .id("madsquash-root")
             .relative()
             .size_full()
-            .bg(rgb(0x12110f))
-            .text_color(rgb(0xf4efe8))
+            .bg(rgb(0x0a0e14))
+            .text_color(rgb(0xf0f6fc))
             .flex()
             .flex_row()
             .drag_over::<ExternalPaths>(|s, _, _, _| {
-                s.border_2().border_dashed().border_color(rgb(0x0fc5fc))
+                s.border_2().border_dashed().border_color(rgb(0x0fc5fc)).bg(rgb(0x08131d))
             })
             .on_drop(cx.listener(|this, paths: &ExternalPaths, _window, cx| {
                 this.handle_dropped_paths(paths, cx);
