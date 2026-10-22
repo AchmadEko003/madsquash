@@ -243,18 +243,6 @@ fn render_empty_apps_state(cx: &mut Context<MadsquashApp>) -> impl IntoElement {
                     this.open_install(cx);
                 })),
         )
-        .child(
-            div()
-                .flex()
-                .flex_wrap()
-                .items_center()
-                .justify_center()
-                .gap_2()
-                .mt_4()
-                .child(render_empty_pill("⚡ Ekstraksi Cepat SquashFS"))
-                .child(render_empty_pill("🚀 Integrasi Menu & Desktop"))
-                .child(render_empty_pill("🔒 Aman & Terisolasi")),
-        )
 }
 
 fn render_empty_search_state() -> impl IntoElement {
@@ -295,17 +283,4 @@ fn render_empty_search_state() -> impl IntoElement {
                 .text_color(rgb(0x8a99ad))
                 .child("Coba gunakan kata kunci pencarian lain."),
         )
-}
-
-fn render_empty_pill(text: &'static str) -> impl IntoElement {
-    div()
-        .px_3()
-        .py_1()
-        .rounded_full()
-        .bg(rgb(0x161c24))
-        .border_1()
-        .border_color(rgb(0x222a36))
-        .text_xs()
-        .text_color(rgb(0x728296))
-        .child(text)
 }
