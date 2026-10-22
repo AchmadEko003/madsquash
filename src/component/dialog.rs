@@ -288,7 +288,7 @@ pub fn render_install_preview(
                 })
                 .child(render_meta_wide(
                     "Tujuan",
-                    &format!("~/.local/share/madsquash/apps/{}/", pending.id),
+                    &format!("~/.local/share/madsquash/app/{}/", pending.id),
                 )),
         )
         .when(pending.exists, |this| {

@@ -203,7 +203,7 @@ pub fn render_detail_pane(app: &AppItem, cx: &mut Context<MadsquashApp>) -> impl
                 // Wide row 1
                 .child(render_meta_wide(
                     "Lokasi",
-                    &format!("~/.local/share/madsquash/apps/{}/app.AppImage", app_clone.id),
+                    &format!("~/.local/share/madsquash/app/{}/app.AppImage", app_clone.id),
                 ))
                 // Wide row 2
                 .child(render_meta_wide(

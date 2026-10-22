@@ -54,11 +54,11 @@ pub fn madsquash_data_dir() -> PathBuf {
 }
 
 pub fn madsquash_apps_dir() -> PathBuf {
-    madsquash_data_dir().join("apps")
+    madsquash_data_dir().join("app")
 }
 
 pub fn madsquash_icon_dir() -> PathBuf {
-    madsquash_data_dir().join("icons")
+    madsquash_data_dir().join("icon")
 }
 
 pub fn applications_dir() -> PathBuf {
@@ -139,12 +139,18 @@ pub fn install_app_files(pending: &PendingInstall) -> Result<PathBuf, String> {
         .as_deref()
         .unwrap_or("Utility;Application;");
 
+    let exec_cmd = if Path::new("/usr/lib/libsystemd.so.0").exists() {
+        format!("env LD_PRELOAD=/usr/lib/libsystemd.so.0 \"{}\" %U", target_binary.display())
+    } else {
+        format!("\"{}\" %U", target_binary.display())
+    };
+
     let desktop_content = format!(
         "[Desktop Entry]\n\
          Type=Application\n\
          Name={}\n\
          Comment={}\n\
-         Exec=\"{}\" %U\n\
+         Exec={}\n\
          {}\
          Terminal=false\n\
          Categories={}\n\
@@ -152,7 +158,7 @@ pub fn install_app_files(pending: &PendingInstall) -> Result<PathBuf, String> {
          X-AppImage-Version={}\n",
         pending.name,
         pending.comment,
-        target_binary.to_string_lossy(),
+        exec_cmd,
         icon_field,
         categories_field,
         pending.version
@@ -190,15 +196,48 @@ pub fn uninstall_app_files(id: &str) -> Result<(), String> {
 
 pub fn launch_app(id: &str) -> Result<(), String> {
     let binary = app_installed_binary_path(id);
-    if !binary.exists() {
-        return Err(format!("Berkas binary tidak ditemukan di {}", binary.display()));
+    let desktop_file = app_desktop_entry_path(id);
+
+    if !binary.exists() && !desktop_file.exists() {
+        return Err(format!(
+            "Aplikasi belum memiliki berkas fisik di ~/.local/share/madsquash/app/{}/app.AppImage. Pasang berkas .AppImage terlebih dahulu.",
+            id
+        ));
     }
 
-    std::process::Command::new(&binary)
+    // 1. Try launching through system desktop manager (gtk-launch / gio)
+    let desktop_id = format!("madsquash-{}", id);
+    if let Ok(child) = std::process::Command::new("gtk-launch")
+        .arg(&desktop_id)
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
         .spawn()
-        .map_err(|e| format!("Gagal menjalankan aplikasi: {}", e))?;
+    {
+        let _ = child.id();
+        return Ok(());
+    }
 
-    Ok(())
+    // 2. Direct binary execution fallback
+    if binary.exists() {
+        let mut cmd = std::process::Command::new(&binary);
+        if let Ok(home) = std::env::var("HOME") {
+            cmd.current_dir(home);
+        }
+        if Path::new("/usr/lib/libsystemd.so.0").exists() {
+            cmd.env("LD_PRELOAD", "/usr/lib/libsystemd.so.0");
+        }
+        cmd.stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null());
+
+        cmd.spawn()
+            .map_err(|e| format!("Gagal menjalankan aplikasi: {}", e))?;
+
+        return Ok(());
+    }
+
+    Err("Tidak dapat menjalankan aplikasi.".to_string())
 }
 
 pub fn known_comment(id: &str) -> &'static str {
