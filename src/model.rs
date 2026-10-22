@@ -186,6 +186,21 @@ pub fn uninstall_app_files(id: &str) -> Result<(), String> {
         let _ = fs::remove_file(&desktop_file);
     }
 
+    // Clean up extracted icons matching this app id
+    let icon_dir = madsquash_icon_dir();
+    if icon_dir.exists() {
+        if let Ok(entries) = fs::read_dir(&icon_dir) {
+            for entry in entries.flatten() {
+                let p = entry.path();
+                if let Some(stem) = p.file_stem().and_then(|s| s.to_str()) {
+                    if stem == id {
+                        let _ = fs::remove_file(&p);
+                    }
+                }
+            }
+        }
+    }
+
     let apps_dir = applications_dir();
     let _ = std::process::Command::new("update-desktop-database")
         .arg(&apps_dir)
@@ -207,14 +222,16 @@ pub fn launch_app(id: &str) -> Result<(), String> {
 
     // 1. Try launching through system desktop manager (gtk-launch / gio)
     let desktop_id = format!("madsquash-{}", id);
-    if let Ok(child) = std::process::Command::new("gtk-launch")
+    if let Ok(mut child) = std::process::Command::new("gtk-launch")
         .arg(&desktop_id)
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
         .spawn()
     {
-        let _ = child.id();
+        std::thread::spawn(move || {
+            let _ = child.wait();
+        });
         return Ok(());
     }
 
@@ -231,8 +248,12 @@ pub fn launch_app(id: &str) -> Result<(), String> {
             .stdout(std::process::Stdio::null())
             .stderr(std::process::Stdio::null());
 
-        cmd.spawn()
+        let mut child = cmd.spawn()
             .map_err(|e| format!("Gagal menjalankan aplikasi: {}", e))?;
+
+        std::thread::spawn(move || {
+            let _ = child.wait();
+        });
 
         return Ok(());
     }
@@ -369,16 +390,40 @@ pub fn compute_file_hash(path: Option<&Path>, fallback_seed: &str) -> String {
 
 pub fn find_squashfs_offset(path: &Path) -> Option<u64> {
     let mut file = File::open(path).ok()?;
-    let mut buf = vec![0u8; 4 * 1024 * 1024]; // search up to 4MB
-    let n = file.read(&mut buf).ok()?;
-    for (i, w) in buf[..n].windows(32).enumerate() {
-        if &w[0..4] == b"hsqs" || &w[0..4] == b"sqsh" {
-            let major = u16::from_le_bytes([w[28], w[29]]);
-            let minor = u16::from_le_bytes([w[30], w[31]]);
-            if major == 4 && minor == 0 {
-                return Some(i as u64);
+    let mut chunk = vec![0u8; 64 * 1024]; // 64KB chunk
+    let mut overlap = [0u8; 32];
+    let mut total_read = 0u64;
+    let max_search = 4 * 1024 * 1024; // 4MB
+
+    while total_read < max_search {
+        let n = file.read(&mut chunk).ok()?;
+        if n == 0 {
+            break;
+        }
+
+        // Check boundary overlap with previous chunk
+        if total_read > 0 {
+            let mut combined = [0u8; 64];
+            combined[..32].copy_from_slice(&overlap);
+            let take = n.min(32);
+            combined[32..32 + take].copy_from_slice(&chunk[..take]);
+            for (i, w) in combined[..32 + take].windows(32).enumerate() {
+                if (&w[0..4] == b"hsqs" || &w[0..4] == b"sqsh") && w[28..32] == [4, 0, 0, 0] {
+                    return Some(total_read - 32 + i as u64);
+                }
             }
         }
+
+        for (i, w) in chunk[..n].windows(32).enumerate() {
+            if (&w[0..4] == b"hsqs" || &w[0..4] == b"sqsh") && w[28..32] == [4, 0, 0, 0] {
+                return Some(total_read + i as u64);
+            }
+        }
+
+        if n >= 32 {
+            overlap.copy_from_slice(&chunk[n - 32..n]);
+        }
+        total_read += n as u64;
     }
     None
 }

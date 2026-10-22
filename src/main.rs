@@ -20,7 +20,7 @@ use crate::component::{
 use crate::model::{
     AppItem, DialogKind, PendingInstall, app_storage_dir, compute_file_hash,
     inspect_appimage_metadata, install_app_files, launch_app, load_installed_apps,
-    save_installed_apps, seed_apps, slug, uninstall_app_files,
+    save_installed_apps, slug, uninstall_app_files,
 };
 
 pub struct MadsquashApp {
@@ -32,7 +32,7 @@ pub struct MadsquashApp {
     pending: Option<PendingInstall>,
     drop_error: Option<String>,
     toast: Option<String>,
-    toast_seq: usize,
+    _toast_task: Option<Task<()>>,
 }
 
 impl MadsquashApp {
@@ -60,14 +60,14 @@ impl MadsquashApp {
             pending: None,
             drop_error: None,
             toast: None,
-            toast_seq: 0,
+            _toast_task: None,
         }
     }
 
-    pub fn visible_apps(&self) -> Vec<AppItem> {
+    pub fn visible_apps(&self) -> Vec<&AppItem> {
         let q = self.query.trim().to_lowercase();
         if q.is_empty() {
-            return self.apps.clone();
+            return self.apps.iter().collect();
         }
         self.apps
             .iter()
@@ -76,7 +76,6 @@ impl MadsquashApp {
                     || app.comment.to_lowercase().contains(&q)
                     || app.version.to_lowercase().contains(&q)
             })
-            .cloned()
             .collect()
     }
 
@@ -91,24 +90,19 @@ impl MadsquashApp {
     }
 
     pub fn show_toast(&mut self, text: impl Into<String>, cx: &mut Context<Self>) {
-        self.toast_seq += 1;
-        let seq = self.toast_seq;
         self.toast = Some(text.into());
         cx.notify();
 
-        cx.spawn(async move |this, cx| {
+        self._toast_task = Some(cx.spawn(async move |this, cx| {
             cx.background_executor()
                 .timer(Duration::from_millis(2500))
                 .await;
             this.update(cx, |this, cx| {
-                if this.toast_seq == seq {
-                    this.toast = None;
-                    cx.notify();
-                }
+                this.toast = None;
+                cx.notify();
             })
             .ok();
-        })
-        .detach();
+        }));
     }
 
     pub fn open_install(&mut self, cx: &mut Context<Self>) {
@@ -126,6 +120,14 @@ impl MadsquashApp {
     }
 
     pub fn close_dialog(&mut self, cx: &mut Context<Self>) {
+        if let Some(ref pending) = self.pending {
+            if let Some(ref icon) = pending.icon_path {
+                let is_used = self.apps.iter().any(|a| a.icon_path.as_ref() == Some(icon));
+                if !is_used && icon.exists() {
+                    let _ = std::fs::remove_file(icon);
+                }
+            }
+        }
         self.dialog = None;
         self.pending = None;
         self.drop_error = None;
@@ -198,28 +200,6 @@ impl MadsquashApp {
             icon_path: details.icon_path,
             categories: details.categories,
             exec: details.exec,
-        });
-        cx.notify();
-    }
-
-    pub fn set_sample_pending(&mut self, cx: &mut Context<Self>) {
-        let id = "kdenlive".to_string();
-        let exists = self.apps.iter().any(|a| a.id == id);
-        self.drop_error = None;
-        self.pending = Some(PendingInstall {
-            id,
-            name: "Kdenlive".into(),
-            version: "25.04.0".into(),
-            size: 327155712,
-            file_name: "Kdenlive-25.04.0-x86_64.AppImage".into(),
-            comment: "Penyunting video".into(),
-            arch: "x86_64".into(),
-            app_type: "AppImage 2".into(),
-            exists,
-            source_path: None,
-            icon_path: None,
-            categories: Some("AudioVideo;Video;Recorder;".into()),
-            exec: Some("kdenlive %U".into()),
         });
         cx.notify();
     }
@@ -310,16 +290,6 @@ impl MadsquashApp {
             self.show_toast("Folder belum ada di disk (pasang berkas terlebih dahulu)", cx);
         }
     }
-
-    pub fn reset_seed(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        self.apps = seed_apps();
-        save_installed_apps(&self.apps);
-        self.selected_id = self.apps.first().map(|a| a.id.clone());
-        self.query.clear();
-        self.search_input
-            .update(cx, |s, cx| s.set_value("", window, cx));
-        self.show_toast("Contoh dikembalikan", cx);
-    }
 }
 
 impl Render for MadsquashApp {
@@ -379,7 +349,7 @@ impl Render for MadsquashApp {
                             .flex_row()
                             .overflow_hidden()
                             .child(render_list_pane(
-                                visible,
+                                &visible,
                                 selected_id.as_deref(),
                                 query_is_empty,
                                 cx,

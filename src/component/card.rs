@@ -5,11 +5,12 @@ use crate::MadsquashApp;
 use crate::model::{AppItem, format_bytes, mono};
 
 pub fn render_app_card(
-    app: AppItem,
+    app: &AppItem,
     is_selected: bool,
     cx: &mut Context<MadsquashApp>,
 ) -> impl IntoElement + use<> {
     let app_id = app.id.clone();
+    let app_name = app.name.clone();
     let monogram = mono(&app.name);
 
     let ver_label = if app.version != "—" && !app.version.starts_with('v') && !app.version.starts_with('V') {
@@ -127,7 +128,7 @@ pub fn render_app_card(
                         .text_sm()
                         .font_weight(FontWeight::BOLD)
                         .text_color(rgb(0xe8edf4))
-                        .child(app.name),
+                        .child(app_name),
                 )
                 .child(
                     div()
@@ -139,7 +140,7 @@ pub fn render_app_card(
 }
 
 pub fn render_list_pane(
-    visible: Vec<AppItem>,
+    visible: &[&AppItem],
     selected_id: Option<&str>,
     query_is_empty: bool,
     cx: &mut Context<MadsquashApp>,
@@ -201,32 +202,9 @@ pub fn render_list_pane(
                                     ),
                             )
                         })
-                        .children(visible.into_iter().map(|app| {
+                        .children(visible.iter().map(|app| {
                             let is_selected = selected_id == Some(app.id.as_str());
                             render_app_card(app, is_selected, cx)
-                        })),
-                ),
-        )
-        // Reset button
-        .child(
-            div()
-                .pt_3()
-                .border_t_1()
-                .border_color(rgb(0x202630))
-                .flex()
-                .items_center()
-                .justify_between()
-                .child(
-                    div()
-                        .id("reset-btn")
-                        .cursor_pointer()
-                        .text_xs()
-                        .font_weight(FontWeight::MEDIUM)
-                        .text_color(rgb(0x64748b))
-                        .hover(|s| s.text_color(rgb(0x7bc7e8)))
-                        .child("↻ Kembalikan contoh bawaan")
-                        .on_click(cx.listener(|this, _, window, cx| {
-                            this.reset_seed(window, cx);
                         })),
                 ),
         )

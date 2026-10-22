@@ -19,7 +19,7 @@ pub fn render_brand_mark() -> impl IntoElement {
 
 pub fn render_rail() -> impl IntoElement {
     div()
-        .w(px(76.))
+        .w(px(68.))
         .h_full()
         .bg(rgb(0x101217))
         .flex()
@@ -29,35 +29,14 @@ pub fn render_rail() -> impl IntoElement {
         .py_5()
         .border_r_1()
         .border_color(rgb(0x202630))
-        // Top section: Logo + Vertical title
+        // Top section: Logo brand mark
         .child(
             div()
                 .flex()
                 .flex_col()
                 .items_center()
-                .gap_4()
-                .child(render_brand_mark())
-                .child(
-                    div()
-                        .w(px(24.))
-                        .h(px(1.))
-                        .bg(rgb(0x202630)),
-                )
-                .child(
-                    div()
-                        .flex()
-                        .flex_col()
-                        .items_center()
-                        .gap(px(3.))
-                        .mt_1()
-                        .children("MADSQUASH".chars().map(|ch| {
-                            div()
-                                .text_xs()
-                                .font_weight(FontWeight::BOLD)
-                                .text_color(rgb(0x7bc7e8))
-                                .child(ch.to_string())
-                        })),
-                ),
+                .gap_3()
+                .child(render_brand_mark()),
         )
         // Bottom section: Arch indicator / version badge
         .child(

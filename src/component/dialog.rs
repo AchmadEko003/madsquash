@@ -202,19 +202,6 @@ pub fn render_drop_zone(
                         .child("atau klik di sini untuk memilih berkas dari komputer"),
                 ),
         )
-        .child(
-            div()
-                .id("sample-kdenlive-btn")
-                .cursor_pointer()
-                .text_xs()
-                .font_weight(FontWeight::MEDIUM)
-                .text_color(rgb(0x7bc7e8))
-                .hover(|s| s.text_color(rgb(0x5bbfe6)))
-                .child("✦ Coba pasang contoh Kdenlive 25.04.0")
-                .on_click(cx.listener(|this, _, _, cx| {
-                    this.set_sample_pending(cx);
-                })),
-        )
 }
 
 pub fn render_install_preview(
