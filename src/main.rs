@@ -18,7 +18,7 @@ use crate::component::{
     toast::render_toast,
 };
 use crate::model::{
-    AppItem, DialogKind, PendingInstall, compute_file_hash, known_comment, parse_appimage_name,
+    AppItem, DialogKind, PendingInstall, compute_file_hash, inspect_appimage_metadata,
     seed_apps, slug,
 };
 
@@ -178,20 +178,25 @@ impl MadsquashApp {
         }
 
         let size = std::fs::metadata(&path).map(|m| m.len()).unwrap_or(0);
-        let (name, version) = parse_appimage_name(&file_name);
-        let id = slug(&name);
+        let details = inspect_appimage_metadata(&path, &file_name);
+        let id = slug(&details.name);
         let exists = self.apps.iter().any(|a| a.id == id);
 
         self.drop_error = None;
         self.pending = Some(PendingInstall {
-            comment: known_comment(&id).to_string(),
+            comment: details.comment,
             id,
-            name,
-            version,
+            name: details.name,
+            version: details.version,
             size,
             file_name,
+            arch: details.arch,
+            app_type: details.app_type,
             exists,
             source_path: Some(path),
+            icon_path: details.icon_path,
+            categories: details.categories,
+            exec: details.exec,
         });
         cx.notify();
     }
@@ -207,8 +212,13 @@ impl MadsquashApp {
             size: 327155712,
             file_name: "Kdenlive-25.04.0-x86_64.AppImage".into(),
             comment: "Penyunting video".into(),
+            arch: "x86_64".into(),
+            app_type: "AppImage 2".into(),
             exists,
             source_path: None,
+            icon_path: None,
+            categories: Some("AudioVideo;Video;Recorder;".into()),
+            exec: Some("kdenlive %U".into()),
         });
         cx.notify();
     }
@@ -227,10 +237,13 @@ impl MadsquashApp {
             comment: pending.comment,
             version: pending.version,
             size: pending.size,
-            arch: "x86_64".into(),
-            app_type: "2".into(),
+            arch: pending.arch,
+            app_type: pending.app_type,
             sha256,
             installed_at: "22 Okt 2026".into(),
+            categories: pending.categories,
+            exec: pending.exec,
+            icon_path: pending.icon_path,
         };
 
         self.apps.retain(|a| a.id != pending.id);

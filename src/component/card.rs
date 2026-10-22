@@ -43,7 +43,17 @@ pub fn render_app_card(
         .on_click(cx.listener(move |this, _, _, cx| {
             this.select_app(app_id.clone(), cx);
         }))
-        .child(
+        .child(if let Some(ref icon_path) = app.icon_path {
+            div()
+                .size(px(36.))
+                .rounded_lg()
+                .bg(rgb(0x141210))
+                .p(px(2.))
+                .flex()
+                .items_center()
+                .justify_center()
+                .child(gpui::img(icon_path.clone()).size(px(32.)))
+        } else {
             div()
                 .size(px(36.))
                 .rounded_lg()
@@ -54,8 +64,8 @@ pub fn render_app_card(
                 .flex()
                 .items_center()
                 .justify_center()
-                .child(monogram),
-        )
+                .child(monogram)
+        })
         .child(
             div()
                 .flex()

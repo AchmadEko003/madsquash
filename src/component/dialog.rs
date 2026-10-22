@@ -3,7 +3,7 @@ use gpui_kit::*;
 
 use crate::MadsquashApp;
 use crate::component::detail::{render_meta_col, render_meta_wide};
-use crate::model::{PendingInstall, format_bytes};
+use crate::model::{PendingInstall, format_bytes, mono};
 
 pub fn render_install_dialog(
     pending: Option<PendingInstall>,
@@ -216,16 +216,76 @@ pub fn render_install_preview(
         .child(
             div()
                 .flex()
+                .items_center()
+                .gap_3()
+                .py_1()
+                .child(if let Some(ref icon_path) = pending.icon_path {
+                    div()
+                        .size(px(44.))
+                        .rounded_xl()
+                        .bg(rgb(0x141210))
+                        .p(px(2.))
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .child(gpui::img(icon_path.clone()).size(px(40.)))
+                } else {
+                    div()
+                        .size(px(44.))
+                        .rounded_xl()
+                        .bg(rgb(0x141210))
+                        .text_color(rgb(0x0fc5fc))
+                        .font_weight(FontWeight::BOLD)
+                        .text_lg()
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .child(mono(&pending.name))
+                })
+                .child(
+                    div()
+                        .flex()
+                        .flex_col()
+                        .child(
+                            div()
+                                .text_base()
+                                .font_weight(FontWeight::BOLD)
+                                .text_color(rgb(0xf4efe8))
+                                .child(pending.name.clone()),
+                        )
+                        .child(
+                            div()
+                                .text_xs()
+                                .text_color(rgb(0xa3988c))
+                                .child(if !pending.comment.is_empty() {
+                                    pending.comment.clone()
+                                } else {
+                                    "AppImage".to_string()
+                                }),
+                        ),
+                ),
+        )
+        .child(
+            div()
+                .flex()
                 .flex_col()
                 .border_t_1()
                 .border_color(rgb(0x3a342c))
                 .child(
                     div()
                         .flex()
-                        .child(render_meta_col("Nama", &pending.name))
-                        .child(render_meta_col("Versi", &pending.version)),
+                        .child(render_meta_col("Versi", &pending.version))
+                        .child(render_meta_col("Ukuran", &format_bytes(pending.size))),
                 )
-                .child(render_meta_wide("Ukuran", &format_bytes(pending.size)))
+                .child(
+                    div()
+                        .flex()
+                        .child(render_meta_col("Arsitektur", &pending.arch))
+                        .child(render_meta_col("Tipe", &pending.app_type)),
+                )
+                .when_some(pending.categories.as_ref(), |this, cat| {
+                    this.child(render_meta_wide("Kategori", cat))
+                })
                 .child(render_meta_wide(
                     "Tujuan",
                     &format!("~/.local/share/madsquash/apps/{}/", pending.id),
