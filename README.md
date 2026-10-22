@@ -28,23 +28,6 @@
 
 ---
 
-## Fitur Utama
-
-- ⚡ **Ekstraksi SquashFS Instan**: Menggunakan pustaka pure-Rust `backhand` untuk membedah partisi SquashFS dan mengekstrak ikon serta metadata `.desktop` dalam hitungan milidetik tanpa mengeksekusi berkas binary secara langsung.
-- 🎨 **Antarmuka Modern & Nyaman**: Mengusung palet warna *soft pastel cerulean* dan *charcoal slate* yang ramah di mata, bersih dari elemen visual yang tidak perlu, dan nyaman untuk penggunaan jangka panjang.
-- 🚀 **Integrasi Desktop Otomatis**: Setiap aplikasi yang dipasang otomatis mendapatkan shortcut di `~/.local/share/applications/` dan izin eksekusi (`0o755`), sehingga langsung muncul di Start Menu / Application Launcher sistem.
-- 🖱️ **Dukungan Double-Click**:
-  - **Di dalam Madsquash**: Klik 2x pada kartu aplikasi langsung meluncurkan program.
-  - **Di File Manager OS** (Nautilus, Dolphin, Thunar): Berkas `.AppImage` otomatis terhubung dengan Madsquash.
-- 🔒 **Penyimpanan Terisolasi & Rapi**:
-  - Binary AppImage tersimpan teratur di `~/.local/share/madsquash/app/<id>/`
-  - Ikon aplikasi tersimpan di `~/.local/share/madsquash/icon/<id>.<ext>`
-  - Katalog persistensi menggunakan basis data JSON lokal yang cepat di `~/.local/share/madsquash/apps.json`
-- 🗑️ **Pencopotan Bersih (Clean Uninstall)**: Menghapus binary, ikon, desktop entry, dan metadata secara tuntas tanpa meninggalkan file sampah.
-- 🛡️ **Bebas Memory Leak**: Mengadopsi zero-copy slicing saat rendering antarmuka, pembersihan proses zombie child saat aplikasi diluncurkan, dan pembatalan task timer yang aman.
-
----
-
 ## Unduh & Instalasi
 
 Kunjungi halaman [**GitHub Releases**](https://github.com/AchmadEko003/madsquash/releases/latest) untuk mengunduh paket siap pakai sesuai distro Anda:
