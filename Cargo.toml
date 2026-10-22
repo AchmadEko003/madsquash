@@ -2,6 +2,9 @@
 name = "madsquash"
 version = "0.1.0"
 edition = "2024"
+description = "Modern pure-Rust AppImage manager and runner"
+repository = "https://github.com/AchmadEko003/madsquash"
+license = "MIT"
 
 [dependencies]
 backhand = "0.25.5"

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1c2533"/>
+      <stop offset="100%" stop-color="#11161e"/>
+    </linearGradient>
+    <linearGradient id="cyan-glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7bc7e8"/>
+      <stop offset="100%" stop-color="#4baed7"/>
+    </linearGradient>
+    <linearGradient id="facet-top" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8ad5f5"/>
+      <stop offset="100%" stop-color="#5bbfe6"/>
+    </linearGradient>
+    <linearGradient id="facet-right" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4baed7"/>
+      <stop offset="100%" stop-color="#2d82a6"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background rounded plate -->
+  <rect x="8" y="8" width="112" height="112" rx="28" fill="url(#bg)" stroke="#26384d" stroke-width="2"/>
+
+  <!-- Cube Top Face -->
+  <polygon points="64,30 94,46 64,62 34,46" fill="url(#facet-top)" />
+
+  <!-- Cube Left Face -->
+  <polygon points="34,46 64,62 64,96 34,80" fill="url(#cyan-glow)" opacity="0.9" />
+
+  <!-- Cube Right Face -->
+  <polygon points="64,62 94,46 94,80 64,96" fill="url(#facet-right)" />
+
+  <!-- AppImage Runner Sparkle -->
+  <path d="M64,38 L67,46 L75,49 L67,52 L64,60 L61,52 L53,49 L61,46 Z" fill="#ffffff" opacity="0.9" />
+</svg>

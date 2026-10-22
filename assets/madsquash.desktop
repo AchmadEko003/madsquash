@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Madsquash
+GenericName=AppImage Manager
+Comment=AppImage Manager by Madko
+Exec=madsquash %F
+Icon=madsquash
+Terminal=false
+Categories=Utility;PackageManager;System;
+MimeType=application/vnd.appimage;application/x-iso9660-appimage;
+StartupNotify=true
+Keywords=appimage;package;manager;squashfs;
