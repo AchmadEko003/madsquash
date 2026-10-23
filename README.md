@@ -22,7 +22,7 @@
 
 ## Tentang Madsquash
 
-**Madsquash** adalah aplikasi pengelola AppImage. Madsquash dirancang untuk memberikan pengalaman terbaik dalam mengelola dan menjalankan berkas `.AppImage` di desktop Linux.
+**Madsquash** adalah aplikasi pengelola AppImage. Madsquash dirancang untuk memberikan pengalaman terbaik dalam mengelola dan menjalankan app berbasis `.AppImage` di desktop Linux.
 
 ---
 
