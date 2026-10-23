@@ -32,23 +32,27 @@ pub fn render_detail_container(
     div()
         .w(px(360.))
         .h_full()
-        .mr_6()
-        .mb_4()
-        .bg(rgb(0x171c24))
-        .border_1()
-        .border_color(rgb(0x222a36))
-        .rounded_2xl()
-        .overflow_hidden()
+        .py_4()
+        .pr_6()
         .child(
             div()
-                .id("detail-scroll")
                 .size_full()
-                .p_5()
-                .overflow_y_scroll()
-                .child(match selected {
-                    Some(app) => render_detail_pane(&app, cx).into_any_element(),
-                    None => render_empty_detail_pane(cx).into_any_element(),
-                }),
+                .bg(rgb(0x171c24))
+                .border_1()
+                .border_color(rgb(0x222a36))
+                .rounded_2xl()
+                .overflow_hidden()
+                .child(
+                    div()
+                        .id("detail-scroll")
+                        .size_full()
+                        .p_5()
+                        .overflow_y_scroll()
+                        .child(match selected {
+                            Some(app) => render_detail_pane(&app, cx).into_any_element(),
+                            None => render_empty_detail_pane(cx).into_any_element(),
+                        }),
+                ),
         )
 }
 

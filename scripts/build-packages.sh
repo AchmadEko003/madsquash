@@ -32,6 +32,12 @@ mkdir -p "${DEB_DIR}/usr/share/icons/hicolor/scalable/apps"
 install -m 755 "${RELEASE_BIN}" "${DEB_DIR}/usr/bin/madsquash"
 install -m 644 "${ROOT_DIR}/assets/madsquash.desktop" "${DEB_DIR}/usr/share/applications/madsquash.desktop"
 install -m 644 "${ROOT_DIR}/assets/madsquash.svg" "${DEB_DIR}/usr/share/icons/hicolor/scalable/apps/madsquash.svg"
+for s in 16 22 24 32 48 64 128 256 512; do
+    if [ -f "${ROOT_DIR}/assets/icons/madsquash_${s}x${s}.png" ]; then
+        mkdir -p "${DEB_DIR}/usr/share/icons/hicolor/${s}x${s}/apps"
+        install -m 644 "${ROOT_DIR}/assets/icons/madsquash_${s}x${s}.png" "${DEB_DIR}/usr/share/icons/hicolor/${s}x${s}/apps/madsquash.png"
+    fi
+done
 
 cat <<EOF > "${DEB_DIR}/DEBIAN/control"
 Package: madsquash
@@ -83,7 +89,7 @@ Modern pure-Rust AppImage manager and runner.
 %files
 /usr/bin/madsquash
 /usr/share/applications/madsquash.desktop
-/usr/share/icons/hicolor/scalable/apps/madsquash.svg
+/usr/share/icons/hicolor/*/apps/madsquash.*
 EOF
 
     rpmbuild --define "_topdir ${RPM_ROOT}" -bb "${RPM_ROOT}/SPECS/madsquash.spec"
@@ -106,6 +112,12 @@ mkdir -p "${ARCH_PKG_DIR}/usr/share/icons/hicolor/scalable/apps"
 install -m 755 "${RELEASE_BIN}" "${ARCH_PKG_DIR}/usr/bin/madsquash"
 install -m 644 "${ROOT_DIR}/assets/madsquash.desktop" "${ARCH_PKG_DIR}/usr/share/applications/madsquash.desktop"
 install -m 644 "${ROOT_DIR}/assets/madsquash.svg" "${ARCH_PKG_DIR}/usr/share/icons/hicolor/scalable/apps/madsquash.svg"
+for s in 16 22 24 32 48 64 128 256 512; do
+    if [ -f "${ROOT_DIR}/assets/icons/madsquash_${s}x${s}.png" ]; then
+        mkdir -p "${ARCH_PKG_DIR}/usr/share/icons/hicolor/${s}x${s}/apps"
+        install -m 644 "${ROOT_DIR}/assets/icons/madsquash_${s}x${s}.png" "${ARCH_PKG_DIR}/usr/share/icons/hicolor/${s}x${s}/apps/madsquash.png"
+    fi
+done
 
 INST_SIZE=$(du -sb "${ARCH_PKG_DIR}" | cut -f1)
 BUILD_DATE=$(date +%s)
@@ -149,6 +161,12 @@ install -m 644 "${ROOT_DIR}/assets/madsquash.desktop" "${APPDIR}/usr/share/appli
 install -m 644 "${ROOT_DIR}/assets/madsquash.svg" "${APPDIR}/madsquash.svg"
 install -m 644 "${ROOT_DIR}/assets/madsquash.svg" "${APPDIR}/.DirIcon"
 install -m 644 "${ROOT_DIR}/assets/madsquash.svg" "${APPDIR}/usr/share/icons/hicolor/scalable/apps/madsquash.svg"
+for s in 16 22 24 32 48 64 128 256 512; do
+    if [ -f "${ROOT_DIR}/assets/icons/madsquash_${s}x${s}.png" ]; then
+        mkdir -p "${APPDIR}/usr/share/icons/hicolor/${s}x${s}/apps"
+        install -m 644 "${ROOT_DIR}/assets/icons/madsquash_${s}x${s}.png" "${APPDIR}/usr/share/icons/hicolor/${s}x${s}/apps/madsquash.png"
+    fi
+done
 
 APPIMAGETOOL=""
 if command -v appimagetool >/dev/null 2>&1; then

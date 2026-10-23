@@ -26,6 +26,7 @@ pub struct AppItem {
 pub enum DialogKind {
     Install,
     Remove,
+    Update,
 }
 
 #[derive(Clone, Debug)]
@@ -81,8 +82,50 @@ pub fn app_desktop_entry_path(id: &str) -> PathBuf {
     applications_dir().join(format!("madsquash-{}.desktop", id))
 }
 
+pub fn system_icon_dir() -> PathBuf {
+    if let Ok(home) = std::env::var("HOME") {
+        PathBuf::from(home).join(".local/share/icons/hicolor/scalable/apps")
+    } else {
+        PathBuf::from("/tmp/icons")
+    }
+}
+
+pub const MADSQUASH_ICON_SVG: &str = include_str!("../assets/madsquash.svg");
+pub const MADSQUASH_PNG_32: &[u8] = include_bytes!("../assets/icons/madsquash_32x32.png");
+pub const MADSQUASH_PNG_48: &[u8] = include_bytes!("../assets/icons/madsquash_48x48.png");
+pub const MADSQUASH_PNG_64: &[u8] = include_bytes!("../assets/icons/madsquash_64x64.png");
+pub const MADSQUASH_PNG_128: &[u8] = include_bytes!("../assets/icons/madsquash_128x128.png");
+pub const MADSQUASH_PNG_256: &[u8] = include_bytes!("../assets/icons/madsquash_256x256.png");
+
 pub fn register_madsquash_desktop_entry() {
     if let Ok(exe) = std::env::current_exe() {
+        let exec_path = crate::updater::current_appimage_path().unwrap_or(exe);
+
+        // Pasang icon SVG ke sistem agar dikenali oleh desktop environment (GNOME/KDE/Wayland dock)
+        let icon_dir = system_icon_dir();
+        let _ = fs::create_dir_all(&icon_dir);
+        let _ = fs::write(icon_dir.join("madsquash.svg"), MADSQUASH_ICON_SVG);
+
+        if let Ok(home) = std::env::var("HOME") {
+            let legacy_icon_dir = PathBuf::from(&home).join(".local/share/icons");
+            let _ = fs::create_dir_all(&legacy_icon_dir);
+            let _ = fs::write(legacy_icon_dir.join("madsquash.svg"), MADSQUASH_ICON_SVG);
+
+            let base_icons = PathBuf::from(&home).join(".local/share/icons/hicolor");
+            let png_sizes = [
+                ("32x32", MADSQUASH_PNG_32),
+                ("48x48", MADSQUASH_PNG_48),
+                ("64x64", MADSQUASH_PNG_64),
+                ("128x128", MADSQUASH_PNG_128),
+                ("256x256", MADSQUASH_PNG_256),
+            ];
+            for (size_str, data) in png_sizes {
+                let size_dir = base_icons.join(size_str).join("apps");
+                let _ = fs::create_dir_all(&size_dir);
+                let _ = fs::write(size_dir.join("madsquash.png"), data);
+            }
+        }
+
         let apps_dir = applications_dir();
         let _ = fs::create_dir_all(&apps_dir);
         let desktop_file = apps_dir.join("madsquash.desktop");
@@ -90,17 +133,27 @@ pub fn register_madsquash_desktop_entry() {
             "[Desktop Entry]\n\
              Type=Application\n\
              Name=Madsquash\n\
+             GenericName=AppImage Manager\n\
              Comment=Modern Pure-Rust AppImage Manager\n\
              Exec=\"{}\" %F\n\
+             Icon=madsquash\n\
              Terminal=false\n\
              Categories=Utility;PackageManager;\n\
              MimeType=application/vnd.appimage;application/x-iso9660-appimage;\n\
-             StartupNotify=true\n",
-            exe.display()
+             StartupNotify=true\n\
+             StartupWMClass=madsquash\n",
+            exec_path.display()
         );
         let _ = fs::write(&desktop_file, content);
         let _ = std::process::Command::new("update-desktop-database")
             .arg(&apps_dir)
+            .status();
+        let _ = std::process::Command::new("kbuildsycoca6").status();
+        let _ = std::process::Command::new("kbuildsycoca5").status();
+        let _ = std::process::Command::new("gtk-update-icon-cache")
+            .arg("-f")
+            .arg("-t")
+            .arg(icon_dir.parent().and_then(|p| p.parent()).unwrap_or(&icon_dir))
             .status();
     }
 }

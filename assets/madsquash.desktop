@@ -9,4 +9,5 @@ Terminal=false
 Categories=Utility;PackageManager;System;
 MimeType=application/vnd.appimage;application/x-iso9660-appimage;
 StartupNotify=true
+StartupWMClass=madsquash
 Keywords=appimage;package;manager;squashfs;

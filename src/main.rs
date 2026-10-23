@@ -1,7 +1,9 @@
 mod component;
 mod model;
+mod updater;
 
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::time::Duration;
 
 use gpui_kit::component::input::{InputEvent, InputState};
@@ -12,7 +14,7 @@ use gpui_kit::*;
 use crate::component::{
     card::render_list_pane,
     detail::render_detail_container,
-    dialog::{render_install_dialog, render_remove_dialog},
+    dialog::{render_install_dialog, render_remove_dialog, render_update_dialog},
     rail::render_rail,
     search::render_search_bar,
     toast::render_toast,
@@ -23,6 +25,7 @@ use crate::model::{
     load_installed_apps, register_madsquash_desktop_entry, save_installed_apps, slug,
     uninstall_app_files,
 };
+use crate::updater::ReleaseInfo;
 
 pub struct MadsquashApp {
     apps: Vec<AppItem>,
@@ -34,6 +37,11 @@ pub struct MadsquashApp {
     drop_error: Option<String>,
     toast: Option<String>,
     _toast_task: Option<Task<()>>,
+    pub update_info: Option<ReleaseInfo>,
+    pub is_checking_update: bool,
+    pub is_updating_appimage: bool,
+    pub update_status: Option<String>,
+    _update_task: Option<Task<()>>,
 }
 
 impl MadsquashApp {
@@ -66,6 +74,11 @@ impl MadsquashApp {
             drop_error: None,
             toast: None,
             _toast_task: None,
+            update_info: None,
+            is_checking_update: false,
+            is_updating_appimage: false,
+            update_status: None,
+            _update_task: None,
         };
 
         if let Some(path) = cli_file {
@@ -86,6 +99,8 @@ impl MadsquashApp {
                 app.take_file_path(path, cx);
             }
         }
+
+        app.check_for_updates(true, cx);
 
         app
     }
@@ -157,7 +172,131 @@ impl MadsquashApp {
         self.dialog = None;
         self.pending = None;
         self.drop_error = None;
+        self.update_status = None;
         cx.notify();
+    }
+
+    pub fn open_update_dialog(&mut self, cx: &mut Context<Self>) {
+        self.dialog = Some(DialogKind::Update);
+        cx.notify();
+    }
+
+    pub fn open_release_web(&mut self, cx: &mut Context<Self>) {
+        let url = self
+            .update_info
+            .as_ref()
+            .map(|u| u.html_url.clone())
+            .unwrap_or_else(|| {
+                format!("https://github.com/{}/releases", crate::updater::REPO_OWNER_NAME)
+            });
+
+        let _ = std::process::Command::new("xdg-open").arg(&url).spawn();
+        self.show_toast("Membuka rilis di peramban...", cx);
+    }
+
+    pub fn check_for_updates(&mut self, silent: bool, cx: &mut Context<Self>) {
+        if self.is_checking_update {
+            return;
+        }
+
+        self.is_checking_update = true;
+        if !silent {
+            self.show_toast("Memeriksa pembaruan sistem...", cx);
+        }
+        cx.notify();
+
+        self._update_task = Some(cx.spawn(async move |this, cx| {
+            let res = cx
+                .background_executor()
+                .spawn(async move {
+                    crate::updater::fetch_latest_release(crate::updater::REPO_OWNER_NAME)
+                })
+                .await;
+
+            this.update(cx, |this, cx| {
+                this.is_checking_update = false;
+                match res {
+                    Ok(Some(release)) => {
+                        if crate::updater::is_newer_version(
+                            crate::updater::CURRENT_VERSION,
+                            &release.tag_name,
+                        ) {
+                            let tag = release.tag_name.clone();
+                            this.update_info = Some(release);
+                            this.show_toast(format!("Pembaruan {} tersedia!", tag), cx);
+                        } else {
+                            this.update_info = None;
+                            if !silent {
+                                this.show_toast(
+                                    format!("Madsquash v{} sudah versi terbaru", crate::updater::CURRENT_VERSION),
+                                    cx,
+                                );
+                            }
+                        }
+                    }
+                    Ok(None) => {
+                        this.update_info = None;
+                        if !silent {
+                            this.show_toast(
+                                format!("Madsquash v{} sudah versi terbaru", crate::updater::CURRENT_VERSION),
+                                cx,
+                            );
+                        }
+                    }
+                    Err(e) => {
+                        if !silent {
+                            this.show_toast(format!("Gagal memeriksa update: {}", e), cx);
+                        }
+                    }
+                }
+                cx.notify();
+            })
+            .ok();
+        }));
+    }
+
+    pub fn apply_appimage_update(&mut self, cx: &mut Context<Self>) {
+        let Some(ref update) = self.update_info else {
+            return;
+        };
+        let Some(ref download_url) = update.appimage_download_url else {
+            self.show_toast("Paket .AppImage tidak ditemukan pada rilis ini", cx);
+            return;
+        };
+        let Some(target_path) = crate::updater::current_appimage_path() else {
+            self.show_toast("Aplikasi tidak dijalankan sebagai AppImage", cx);
+            return;
+        };
+
+        let url = download_url.clone();
+        self.is_updating_appimage = true;
+        self.update_status = Some("Mengunduh berkas AppImage baru...".to_string());
+        cx.notify();
+
+        self._update_task = Some(cx.spawn(async move |this, cx| {
+            let res = cx
+                .background_executor()
+                .spawn(async move {
+                    crate::updater::download_and_replace_appimage(&url, &target_path)
+                })
+                .await;
+
+            this.update(cx, |this, cx| {
+                this.is_updating_appimage = false;
+                match res {
+                    Ok(()) => {
+                        this.update_status = Some("Pembaruan berhasil! Silakan restart aplikasi.".into());
+                        this.show_toast("Madsquash berhasil diperbarui. Silakan buka ulang aplikasi.", cx);
+                    }
+                    Err(e) => {
+                        this.update_status = Some(format!("Gagal update: {}", e));
+                        this.show_toast(format!("Gagal update: {}", e), cx);
+                    }
+                }
+                cx.notify();
+            })
+            .ok();
+        }));
     }
 
     pub fn handle_dropped_paths(&mut self, paths: &ExternalPaths, cx: &mut Context<Self>) {
@@ -341,6 +480,13 @@ impl Render for MadsquashApp {
         let drop_error = self.drop_error.clone();
         let toast = self.toast.clone();
 
+        let has_update = self.update_info.is_some();
+        let update_tag = self.update_info.as_ref().map(|u| u.tag_name.clone());
+        let is_checking = self.is_checking_update;
+        let update_info = self.update_info.clone();
+        let is_updating_appimage = self.is_updating_appimage;
+        let update_status = self.update_status.clone();
+
         div()
             .id("madsquash-root")
             .relative()
@@ -356,7 +502,12 @@ impl Render for MadsquashApp {
                 this.handle_dropped_paths(paths, cx);
             }))
             // Left Sidebar Rail
-            .child(render_rail())
+            .child(render_rail(
+                has_update,
+                update_tag.as_deref(),
+                is_checking,
+                cx,
+            ))
             // Main Stage
             .child(
                 div()
@@ -392,6 +543,9 @@ impl Render for MadsquashApp {
                     let app_name = selected.as_ref().map(|a| a.name.clone()).unwrap_or_default();
                     this.child(render_remove_dialog(app_name, cx))
                 }
+                DialogKind::Update => {
+                    this.child(render_update_dialog(update_info, is_updating_appimage, update_status, cx))
+                }
             })
             // Toast Notification Banner (when active)
             .when_some(toast, |this, toast_msg| this.child(render_toast(toast_msg)))
@@ -415,6 +569,14 @@ fn parse_cli_appimage_arg() -> Option<PathBuf> {
     None
 }
 
+const MADSQUASH_PNG_256: &[u8] = include_bytes!("../assets/icons/madsquash_256x256.png");
+
+fn load_window_icon() -> Option<Arc<image::RgbaImage>> {
+    image::load_from_memory(MADSQUASH_PNG_256)
+        .ok()
+        .map(|img| Arc::new(img.into_rgba8()))
+}
+
 fn main() {
     register_madsquash_desktop_entry();
     let cli_file = parse_cli_appimage_arg();
@@ -423,6 +585,7 @@ fn main() {
         .with_assets(gpui_kit::assets::Assets)
         .run(move |cx| {
             gpui_kit::init(cx);
+            cx.set_app_identity("madsquash", "Madsquash");
             Theme::change(ThemeMode::Dark, None, cx);
             Theme::update(cx, |theme| {
                 theme.background = rgb(0x12110f).into();
@@ -444,12 +607,15 @@ fn main() {
                 cx,
             ));
 
+            let window_icon = load_window_icon();
             let window_options = WindowOptions {
                 window_bounds: Some(window_bounds),
                 titlebar: Some(TitlebarOptions {
                     title: Some("Madsquash — AppImage".into()),
                     ..Default::default()
                 }),
+                app_id: Some("madsquash".into()),
+                icon: window_icon,
                 ..Default::default()
             };
 

@@ -456,3 +456,287 @@ pub fn render_remove_dialog(
                 ),
         )
 }
+
+pub fn render_update_dialog(
+    update: Option<crate::updater::ReleaseInfo>,
+    is_updating: bool,
+    status_msg: Option<String>,
+    cx: &mut Context<MadsquashApp>,
+) -> impl IntoElement {
+    let has_appimage_url = update.as_ref().and_then(|u| u.appimage_download_url.as_ref()).is_some();
+    let is_running_appimage = crate::updater::current_appimage_path().is_some();
+    let can_auto_update = is_running_appimage && has_appimage_url;
+
+    let target_version = update.as_ref().map(|u| u.tag_name.clone()).unwrap_or_else(|| "Terbaru".into());
+    let release_notes = update
+        .as_ref()
+        .map(|u| {
+            if u.body.trim().is_empty() {
+                "Pembaruan performa dan perbaikan bug sistem.".to_string()
+            } else {
+                u.body.clone()
+            }
+        })
+        .unwrap_or_else(|| "Memeriksa rilis...".into());
+
+    div()
+        .id("update-dialog-overlay")
+        .absolute()
+        .inset_0()
+        .bg(rgba(0x0e1116e6))
+        .flex()
+        .items_center()
+        .justify_center()
+        .on_click(cx.listener(|this, _, _, cx| {
+            if !this.is_updating_appimage {
+                this.close_dialog(cx);
+            }
+        }))
+        .child(
+            div()
+                .id("update-dialog-content")
+                .w(px(480.))
+                .p_6()
+                .rounded_2xl()
+                .bg(rgb(0x171c24))
+                .border_1()
+                .border_color(rgb(0x222a36))
+                .shadow_2xl()
+                .flex()
+                .flex_col()
+                .gap_4()
+                .on_click(|_, _, cx| cx.stop_propagation())
+                // Header
+                .child(
+                    div()
+                        .flex()
+                        .items_center()
+                        .justify_between()
+                        .child(
+                            div()
+                                .flex()
+                                .items_center()
+                                .gap_3()
+                                .child(
+                                    div()
+                                        .size(px(32.))
+                                        .rounded_lg()
+                                        .bg(rgb(0x182735))
+                                        .border_1()
+                                        .border_color(rgb(0x5bbfe6))
+                                        .flex()
+                                        .items_center()
+                                        .justify_center()
+                                        .text_color(rgb(0x5bbfe6))
+                                        .font_weight(FontWeight::BOLD)
+                                        .text_sm()
+                                        .child("⬆"),
+                                )
+                                .child(
+                                    div()
+                                        .text_lg()
+                                        .font_weight(FontWeight::BOLD)
+                                        .text_color(rgb(0xe8edf4))
+                                        .child("Pembaruan Sistem Madsquash"),
+                                ),
+                        )
+                        .child(
+                            div()
+                                .id("update-close-x")
+                                .size(px(24.))
+                                .rounded_md()
+                                .flex()
+                                .items_center()
+                                .justify_center()
+                                .text_color(rgb(0x64748b))
+                                .cursor_pointer()
+                                .hover(|s| s.text_color(rgb(0xe8edf4)))
+                                .child("✕")
+                                .on_click(cx.listener(|this, _, _, cx| {
+                                    if !this.is_updating_appimage {
+                                        this.close_dialog(cx);
+                                    }
+                                })),
+                        ),
+                )
+                // Version Banner
+                .child(
+                    div()
+                        .flex()
+                        .items_center()
+                        .justify_between()
+                        .px_4()
+                        .py_3()
+                        .rounded_xl()
+                        .bg(rgb(0x13171e))
+                        .border_1()
+                        .border_color(rgb(0x1f2733))
+                        .child(
+                            div()
+                                .flex()
+                                .flex_col()
+                                .child(
+                                    div()
+                                        .text_xs()
+                                        .text_color(rgb(0x64748b))
+                                        .child("Versi Sekarang"),
+                                )
+                                .child(
+                                    div()
+                                        .text_sm()
+                                        .font_weight(FontWeight::BOLD)
+                                        .text_color(rgb(0x94a3b8))
+                                        .child(format!("v{}", crate::updater::CURRENT_VERSION)),
+                                ),
+                        )
+                        .child(
+                            div()
+                                .text_base()
+                                .text_color(rgb(0x5bbfe6))
+                                .child("➜"),
+                        )
+                        .child(
+                            div()
+                                .flex()
+                                .flex_col()
+                                .items_end()
+                                .child(
+                                    div()
+                                        .text_xs()
+                                        .text_color(rgb(0x5bbfe6))
+                                        .child("Versi Baru Tersedia"),
+                                )
+                                .child(
+                                    div()
+                                        .text_sm()
+                                        .font_weight(FontWeight::BOLD)
+                                        .text_color(rgb(0x6ee7b7))
+                                        .child(target_version),
+                                ),
+                        ),
+                )
+                // Release notes box
+                .child(
+                    div()
+                        .flex()
+                        .flex_col()
+                        .gap_1()
+                        .child(
+                            div()
+                                .text_xs()
+                                .font_weight(FontWeight::MEDIUM)
+                                .text_color(rgb(0x94a3b8))
+                                .child("Catatan Rilis:"),
+                        )
+                        .child(
+                            div()
+                                .id("release-notes-box")
+                                .max_h(px(120.))
+                                .overflow_y_scroll()
+                                .p_3()
+                                .rounded_lg()
+                                .bg(rgb(0x101318))
+                                .border_1()
+                                .border_color(rgb(0x1e242e))
+                                .text_xs()
+                                .text_color(rgb(0xc5d1de))
+                                .child(release_notes),
+                        ),
+                )
+                // Status message (if updating)
+                .when_some(status_msg, |this, msg| {
+                    this.child(
+                        div()
+                            .px_3()
+                            .py_2()
+                            .rounded_lg()
+                            .bg(rgb(0x1c2b38))
+                            .border_1()
+                            .border_color(rgb(0x274b6b))
+                            .text_xs()
+                            .text_color(rgb(0x5bbfe6))
+                            .child(msg),
+                    )
+                })
+                // Buttons footer
+                .child(
+                    div()
+                        .flex()
+                        .items_center()
+                        .justify_end()
+                        .gap_2()
+                        .mt_2()
+                        .child(
+                            div()
+                                .id("update-cancel-btn")
+                                .px_4()
+                                .py_2()
+                                .rounded_xl()
+                                .border_1()
+                                .border_color(rgb(0x252e3c))
+                                .bg(rgb(0x1b212b))
+                                .text_color(rgb(0xe8edf4))
+                                .text_xs()
+                                .font_weight(FontWeight::MEDIUM)
+                                .cursor_pointer()
+                                .hover(|s| s.bg(rgb(0x222a36)))
+                                .child("Tutup")
+                                .on_click(cx.listener(|this, _, _, cx| {
+                                    if !this.is_updating_appimage {
+                                        this.close_dialog(cx);
+                                    }
+                                })),
+                        )
+                        .child(
+                            div()
+                                .id("open-github-release-btn")
+                                .px_4()
+                                .py_2()
+                                .rounded_xl()
+                                .border_1()
+                                .border_color(rgb(0x354050))
+                                .bg(rgb(0x1f2733))
+                                .text_color(rgb(0xe8edf4))
+                                .text_xs()
+                                .font_weight(FontWeight::MEDIUM)
+                                .cursor_pointer()
+                                .hover(|s| s.bg(rgb(0x293444)))
+                                .child("Buka di GitHub")
+                                .on_click(cx.listener(|this, _, _, cx| {
+                                    this.open_release_web(cx);
+                                })),
+                        )
+                        .when(can_auto_update, |this| {
+                            this.child(
+                                div()
+                                    .id("auto-update-appimage-btn")
+                                    .px_4()
+                                    .py_2()
+                                    .rounded_xl()
+                                    .bg(if is_updating { rgb(0x2d5f78) } else { rgb(0x5bbfe6) })
+                                    .text_color(rgb(0x0c141d))
+                                    .text_xs()
+                                    .font_weight(FontWeight::BOLD)
+                                    .cursor_pointer()
+                                    .hover(|s| {
+                                        if is_updating {
+                                            s
+                                        } else {
+                                            s.bg(rgb(0x78cef0))
+                                        }
+                                    })
+                                    .child(if is_updating {
+                                        "Mengunduh..."
+                                    } else {
+                                        "Update Otomatis"
+                                    })
+                                    .on_click(cx.listener(|this, _, _, cx| {
+                                        if !this.is_updating_appimage {
+                                            this.apply_appimage_update(cx);
+                                        }
+                                    })),
+                            )
+                        }),
+                ),
+        )
+}
