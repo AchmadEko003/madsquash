@@ -131,9 +131,3 @@ Ketika Anda memasang AppImage menggunakan Madsquash, file akan ditempatkan pada 
     └── icon/
         └── <id>.<png/svg>              # Ikon aplikasi hasil ekstraksi SquashFS
 ```
-
----
-
-## Lisensi
-
-Proyek ini dilisensikan di bawah [**MIT License**](LICENSE).
