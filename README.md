@@ -5,15 +5,13 @@
 </p>
 
 <p align="center">
-  <strong>Pengelola Berkas AppImage Modern, Cepat, dan Ringan Berbasis Rust murni untuk Linux.</strong>
+  <strong>Pengelola AppImage untuk Linux.</strong>
 </p>
 
 <p align="center">
   <a href="https://github.com/AchmadEko003/madsquash/releases/latest">
     <img src="https://img.shields.io/github/v/release/AchmadEko003/madsquash?color=5bbfe6&label=release" alt="Latest Release" />
   </a>
-  <img src="https://img.shields.io/badge/rust-2024%20edition-orange.svg" alt="Rust 2024 Edition" />
-  <img src="https://img.shields.io/badge/gui-GPUI%20Kit-7bc7e8.svg" alt="GPUI Kit" />
   <img src="https://img.shields.io/badge/platform-Linux-blue.svg" alt="Platform Linux" />
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License" />
@@ -24,7 +22,7 @@
 
 ## Tentang Madsquash
 
-**Madsquash** adalah aplikasi pengelola AppImage modern yang dibangun sepenuhnya menggunakan bahasa pemrograman **Rust** dan framework UI GPU-accelerated (**GPUI**). Madsquash dirancang untuk memberikan pengalaman pengguna terbaik dalam mengelola, mengekstrak, mengintegrasikan, dan menjalankan berkas `.AppImage` di desktop Linux tanpa ketergantungan runtime yang berat.
+**Madsquash** adalah aplikasi pengelola AppImage. Madsquash dirancang untuk memberikan pengalaman terbaik dalam mengelola dan menjalankan berkas `.AppImage` di desktop Linux.
 
 ---
 
@@ -60,10 +58,10 @@ chmod +x Madsquash-*-x86_64.AppImage
 
 ---
 
-## Membangun dari Sumber (Build from Source)
+## Build from Source
 
-### Kebutuhan Sistem (Prerequisites)
-Pastikan Anda telah memasang Rust toolchain dan pustaka pengembangan sistem:
+### Prerequisites
+Pastikan Anda telah memasang Rust toolchain:
 
 **Ubuntu / Debian:**
 ```bash
@@ -93,7 +91,7 @@ cargo run
 # Atau build binary release teroptimasi
 cargo build --release
 ```
-Binary release yang dihasilkan berada di `target/release/madsquash` dengan ukuran ramping (~21 MB).
+Binary release yang dihasilkan berada di `target/release/madsquash` dengan ukuran compressed (~21 MB).
 
 ---
 
@@ -118,7 +116,7 @@ Seluruh berkas installer akan tersedia di folder `dist/`:
 
 ## Struktur Direktori Data Madsquash
 
-Ketika Anda memasang berkas AppImage menggunakan Madsquash, file akan ditata rapi pada direktori standar XDG Linux:
+Ketika Anda memasang AppImage menggunakan Madsquash, file akan ditempatkan pada direktori standar Linux:
 
 ```
 ~/.local/share/
@@ -136,6 +134,6 @@ Ketika Anda memasang berkas AppImage menggunakan Madsquash, file akan ditata rap
 
 ---
 
-## ✦ Lisensi
+## Lisensi
 
 Proyek ini dilisensikan di bawah [**MIT License**](LICENSE).
